@@ -1,0 +1,42 @@
+:root {
+    --theme-green: #307351;
+    --theme-dark-green: #214e38;
+    --theme-red: #E75A7C;
+    --theme-blue: #4472CA;
+    --theme-yellow: #FFBF46;
+    --dark-darker: #1F1F1F;
+    --dark: #272727;
+    --dark-bright: #333333;
+    --light-darker: #E2D6FF;
+    --light: #F1EBFF;
+    --light-bright: #F6F2FF;
+  }
+
+html, body {
+    -ms-overflow-style: none; 
+    background: var(--dark);
+    margin: 0px;
+}
+@font-face {
+    font-family: 'Unbounded'; 
+    src: url('../src/assets/fonts/Unbounded-VariableFont_wght.ttf'); 
+  }
+@font-face {
+    font-family: 'Lora'; 
+    src: url('../src/assets/fonts/Lora-VariableFont_wght.ttf'); 
+  }
+.unbounded-display {
+    font-family: 'Unbounded';
+    font-weight: 900;
+}
+.lora-text {
+  font-family: 'Lora';
+  font-weight: 500;
+}
+.lora-display {
+  font-family: 'Lora';
+  font-weight: 900;
+}
+::-webkit-scrollbar {
+    display: none;
+}
