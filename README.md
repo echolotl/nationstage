@@ -1,7 +1,7 @@
-# Tauri + SvelteKit + TypeScript
+# NationStage
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+NationStage is a Tauri-based desktop client for [NationStates](https://www.nationstates.net/), with the goal of having a different UI and integration with the NationStates API.
 
-## Recommended IDE Setup
+This project uses a combination of Svelte, TypeScript, and Rust, among others.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+This is a beginner project to learn my way around Svelte and Rust.

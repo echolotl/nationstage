@@ -49,7 +49,7 @@ pub async fn store_autologin(
     
     let path = get_storage_path(&app);
     
-    // Create directory if it doesn't exist
+    // Create directory, if it doesn't exist
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
