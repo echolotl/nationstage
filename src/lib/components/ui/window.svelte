@@ -17,19 +17,18 @@ async function minimize() {
   async function close() {
     await appWindow.close();
   }
+
+  document.addEventListener('contextmenu', event => event.preventDefault());
 </script>
 
 <div data-tauri-drag-region class="titlebar">
   <div class="small-logo-icon">
   <div class="titlebar-logo">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 120 120">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 120 120">
       <path fill="currentColor" d="M71.53,108l-1.03-60.65s-20.44-23.07-16.16-19.62C119.7,80.3,92.53,5.82,92.53,5.82,92.53,5.82,0-20.47,0,38.68c0,38.54,1.13,49.62,1.91,52.67.59,14.67,69.62,16.65,69.62,16.65ZM74.14,13.29c3.96-2.03,8.84-.49,10.88,3.45,3.13,6.04,3.36,15.21.48,16.69-3.96,2.03-14.72-4.88-14.83-9.32-.03-1.35-.62-8.72,3.47-10.82Z"/>
     </svg>
   </div>
-  <div class="unbounded-display" id="logomark">    
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 120 120">
-    <path fill="currentColor" d="M71.53,108l-1.03-60.65s-20.44-23.07-16.16-19.62C119.7,80.3,92.53,5.82,92.53,5.82,92.53,5.82,0-20.47,0,38.68c0,38.54,1.13,49.62,1.91,52.67.59,14.67,69.62,16.65,69.62,16.65ZM74.14,13.29c3.96-2.03,8.84-.49,10.88,3.45,3.13,6.04,3.36,15.21.48,16.69-3.96,2.03-14.72-4.88-14.83-9.32-.03-1.35-.62-8.72,3.47-10.82Z"/>
-  </svg></div>
+  <div class="unbounded-display" id="logomark">NationStage</div>
   </div>
   <button class="titlebar-button" on:click={minimize} aria-label="Minimize">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
@@ -50,7 +49,7 @@ async function minimize() {
 <div class="titlebar-spacer"></div>
 <style>
     .titlebar {
-  height: 30px;
+  height: 20px;
   background: var(--dark-darker);
   user-select: none;
   display: flex;
@@ -63,7 +62,7 @@ async function minimize() {
 }
 .titlebar-spacer {
   top: 0;
-    height: 22px;
+    height: 20px;
     padding: 0;
 }
 .titlebar-button {
@@ -71,7 +70,7 @@ async function minimize() {
   justify-content: center;
   align-items: center;
   width: 30px;
-  height: 30px;
+  height: 20px;
   user-select: none;
   -webkit-user-select: none;
   background: transparent;
@@ -82,8 +81,9 @@ async function minimize() {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 20px;
-  height: 20px;
+  margin-top: 5px;
+  width: 1rem;
+  height: 1rem;
   user-select: none;
   -webkit-user-select: none;
   background: transparent;
@@ -96,11 +96,15 @@ async function minimize() {
   margin-left: 10px;
   align-items: center;
   width: auto;
-  height: 30px;
-  color: var(--theme-green);
+  height: 20px;
+  color: var(--gray-mix);
+}
+#logomark {
+  color: var(--gray-mix);
+  font-size: .75rem;
 }
 .titlebar-button:hover {
-  background: var(--theme-green);
+  background: var(--gray-mix);
 }
 #close-button:hover {
   background: var(--theme-red);

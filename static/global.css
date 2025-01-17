@@ -10,6 +10,7 @@
     --light-darker: #E2D6FF;
     --light: #F1EBFF;
     --light-bright: #F6F2FF;
+    --gray-mix: #49484c;
   }
 
 html, body {
@@ -39,4 +40,13 @@ html, body {
 }
 ::-webkit-scrollbar {
     display: none;
+}
+
+.content {
+  margin: 0 3.25rem;
+}
+h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--light);
 }
