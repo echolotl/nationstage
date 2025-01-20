@@ -1,13 +1,38 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { isAuthenticated, currentNation } from '$lib/stores/auth';
+  import { invoke } from '@tauri-apps/api/core';
+  import { notices } from '$lib/stores/notices';
+  import { goto } from '$app/navigation';
+
+  interface AuthData {
+    nation: string;
+    pin: string;
+    autologin: string;
+    region: string | null;
+  }
 
   // Active route tracking
 
   let currentPath: string = "";
   $: currentPath = $page.url.pathname;
+  let regionName: string | null = null;
+
+  async function loadRegionInfo() {
+    if (!$currentNation) return;
+    try {
+      const auth = await invoke<AuthData>('get_auth');
+      regionName = auth.region;
+    } catch (error) {
+      console.error('Failed to load region:', error);
+    }
+  }
+  $: if ($isAuthenticated && $currentNation) {
+    loadRegionInfo();
+  }
 
   type SvgElement = {
-    type: "path" | "ellipse" | "circle" | "rect";
+    type: string;
     attributes: string;
   };
 
@@ -27,6 +52,7 @@
     path: string;
     icon?: Icon;
     subItems?: NavSubItem[];
+    highlight?: boolean;
   }
 
   function renderSvgElement(element: SvgElement) {
@@ -42,7 +68,9 @@
     }
   }
 
-  const navItems: NavItem[] = [
+  $: hasUnreadNotices = $notices.some(notice => notice.unread);
+
+  const baseNavItems: NavItem[] = [
     {
       label: "Home",
       path: "/",
@@ -60,20 +88,14 @@
     {
       label: "Notices",
       path: "/notices",
+      highlight: $notices.some(notice => notice.unread),
       icon: {
-        viewBox: "-26 -5 85 85",
-        elements: [
-          {
-            type: "path",
-            attributes:
-              'd="M25.02.44c3.21.46,6.4,2.77,7.1,4.91.65,1.93-.07,3.73-.55,5.69-.86,3.26-2.16,8.2-3.46,13.11-1.49,5.66-2.96,11.2-3.74,14.19-.59,2.22-.88,4.19-2.94,6.09-3.19,3.22-9.76,3.01-12.69-.38-2.16-2.42-1.98-4.31-2.81-7.69-1.5-7.12-3.11-14.75-4.6-21.82C.81,11.21-.45,8.77.17,5.66,1.85.61,8.84-.16,14.83.02c3.21.01,7.08-.09,10.01.38l.18.03Z"',
-          },
-          {
-            type: "circle",
-            attributes: 'cx="15.5" cy="65.44" r="12.44"',
-          },
-        ],
-      },
+        viewBox: "0 0 24 24",
+        elements: [{
+          type: "path",
+          attributes: 'd="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"'
+        }]
+      }
     },
     {
       label: "Issues",
@@ -155,14 +177,80 @@
         { label: "Activity", path: "/world/activity" },
       ],
     },
-    { label: "Settings", path: "/settings" },
+    { label: "Settings", path: "/settings", icon: {
+      viewBox: "0 0 85 85",
+      elements: [
+        {
+          type: "path",
+          attributes: 'd="M75.06,47.75l-6.41-5.75c.09-.96.14-1.94.14-2.93,0-.67-.03-1.34-.07-2l6.34-5.75c1.6-1.45,1.97-3.81.89-5.68l-6.81-11.77c-1.08-1.87-3.32-2.73-5.38-2.05l-7.9,2.58c-1.43-.99-2.95-1.86-4.55-2.6l-1.77-8.2C49.07,1.5,47.21,0,45.05,0h-13.6c-2.16.02-4.02,1.53-4.47,3.64l-1.83,8.71c-1.31.67-2.56,1.43-3.75,2.28l-8.64-2.78c-2.05-.66-4.28.2-5.36,2.07L.61,25.71c-1.08,1.87-.7,4.24.91,5.68l7.3,6.55c-.01.38-.03.75-.03,1.13,0,.7.03,1.4.08,2.09l-7.35,6.66c-1.6,1.45-1.97,3.81-.89,5.68l6.81,11.77c1.08,1.87,3.32,2.73,5.38,2.05l9.58-3.13c.81.53,1.65,1.02,2.52,1.48l2.13,9.87c.45,2.11,2.32,3.61,4.47,3.61h13.6c2.16-.02,4.02-1.53,4.47-3.64l1.95-9.28c1.14-.54,2.24-1.15,3.3-1.82l8.97,2.88c2.05.66,4.28-.2,5.36-2.07l6.79-11.79c1.08-1.87.7-4.24-.91-5.68ZM38.32,51.18c-6.87,0-12.44-5.57-12.44-12.44s5.57-12.44,12.44-12.44,12.44,5.57,12.44,12.44-5.57,12.44-12.44,12.44Z"'
+        }
+      ]
+    } },
   ];
+
+  $: authNavItems = $isAuthenticated ? [
+    {
+      label: $currentNation,
+      path: `/nation/${$currentNation}`,
+      icon: {
+        viewBox: "0 0 85 85",
+        elements: [{
+          type: "path",
+          attributes: 'd="M41.74,1.07l8.79,27.06h28.45c1.5,0,2.13,1.92.91,2.8l-23.02,16.72,8.79,27.06c.46,1.43-1.17,2.61-2.38,1.73l-23.02-16.72-23.02,16.72c-1.21.88-2.85-.3-2.38-1.73l8.79-27.06L.64,30.93c-1.21-.88-.59-2.8.91-2.8h28.45S38.79,1.07,38.79,1.07c.46-1.43,2.48-1.43,2.95,0Z"'
+        }]
+      },
+      subItems: undefined,
+      highlight: false
+    },
+    {
+      label: regionName || "Loading Region...",
+      path: regionName ? `/region/${regionName}` : '#',
+      icon: {
+        viewBox: "0 0 46 59",
+        elements: [{
+          type: "path",
+          attributes: 'd="M23.1,59.28c2.45,0,23.1-19.38,23.1-34.18C46.19,8,37.19,0,23.1,0,10.34,0,0,9,0,25.1c0,14.8,20.45,34.18,23.1,34.18ZM23.3,36.63c-7.72,0-13.97-6.25-13.97-13.97s6.25-13.97,13.97-13.97,13.97,6.25,13.97,13.97-6.25,13.97-13.97,13.97Z"'
+        }]
+      }
+    }
+  ] : [];
+
+  $: navItems = [...authNavItems, ...baseNavItems];
+
+  function goBack() {
+    window.history.back();
+  }
+
+  function goForward() {
+    window.history.forward();
+  }
+
+  function refresh() {
+    window.location.reload();
+  }
 </script>
 
 <nav class="nav-container">
+  <div class="nav-controls">
+    <button class="nav-control-btn" on:click={goBack}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1rem" height="1rem">
+        <path fill="currentColor" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
+      </svg>
+    </button>
+    <button class="nav-control-btn" on:click={goForward}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1rem" height="1rem">
+        <path fill="currentColor" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" />
+      </svg>
+    </button>
+    <button class="nav-control-btn" on:click={refresh}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1rem" height="1rem">
+        <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+      </svg>
+    </button>
+  </div>
   <ul class="nav-list">
     {#each navItems as item}
-      <li class="nav-item lora-text">
+      <li class="nav-item lora-text {item.highlight ? 'highlight' : ''}">
         {#if item.subItems}
           <div class="dropdown">
             <button
@@ -237,18 +325,21 @@
     {/each}
   </ul>
 </nav>
+<div id="navbar-spacer"></div>
 
 <style>
   .nav-container {
     padding-top: 0.5rem;
     padding-left: 0.5rem;
-    background: var(--dark-darker, #2c3e50);
+    background: var(--background-secondary, #2c3e50);
     width: 100%;
-    position: sticky;
-    top: 0;
+    position: fixed;
+    top: 20px;
     z-index: 100;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-bottom: 2px solid var(--theme-green);
+    border-bottom: 2px solid var(--theme-accent);
+    display: flex;
+    align-items: center;
   }
   .tab-icon {
     display: flex;
@@ -260,6 +351,9 @@
     justify-content: center;
     gap: 0.25rem;
     text-decoration: none;
+  }
+  #navbar-spacer {
+    height: 38px;
   }
 
   .nav-list {
@@ -277,7 +371,7 @@
 
   a,
   .dropdown-trigger {
-    color: var(--light, #ecf0f1);
+    color: var(--text, #ecf0f1);
     text-decoration: none;
     padding: 0.25rem 1rem;
     display: block;
@@ -295,15 +389,15 @@
 
   a:hover,
   .dropdown-trigger:hover {
-    background: var(--gray-mix);
+    background: var(--background);
   }
 
   .active {
-    background: var(--theme-green);
+    background: var(--theme-accent);
     font-weight: bold;
   }
   .active:hover {
-    background-color: var(--theme-dark-green, #214e38);
+    background-color: var(--theme-accent-hover);
   }
 
   .dropdown {
@@ -324,12 +418,13 @@
     top: 100%;
     left: 0;
     min-width: 200px;
-    background: var(--dark-darker, #2c3e50);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: var(--background-secondary, #2c3e50);
     padding: 0 0;
     list-style: none;
-    border-bottom-right-radius: 4px;
-    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border: 2px solid var(--theme-accent);
+    border-top: none;
     a {
       display: flex;
       align-items: center;
@@ -351,5 +446,50 @@
   .dropdown-content li:last-child a {
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
+  }
+
+  .highlight {
+    position: relative;
+  }
+  
+  .highlight::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    background: var(--theme-red);
+    border-radius: 50%;
+  }
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 0.5rem;
+  }
+
+  .nav-control-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    padding: 0.25rem;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-control-btn:hover {
+    background: var(--background);
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: var(--text-secondary);
+    margin: 0 0.5rem;
   }
 </style>

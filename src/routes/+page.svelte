@@ -4,7 +4,7 @@
   
  <Content>
     <div class="dashboard">
-      <h1 class="lora-text">Dashboard</h1>
+      <h1 class="center-text lora-text">Dashboard</h1>
     </div>
  </Content>
 

@@ -1,9 +1,16 @@
 :root {
-    --theme-green: #307351;
-    --theme-dark-green: #214e38;
-    --theme-red: #E75A7C;
-    --theme-blue: #4472CA;
-    --theme-yellow: #FFBF46;
+    --green-darker: #215c48;
+    --green-dark: #307351;
+    --green-light: #53a77d;
+    --red-darker: #cf4a88;
+    --red-dark: #E75A7C;
+    --red-light: #ff587f;
+    --blue-darker: #374eb6;
+    --blue-dark: #4472CA;
+    --blue-light: #558bf1;
+    --yellow-darker: #e49733;
+    --yellow-dark: #FFBF46;
+    --yellow-light: #ffc861;
     --dark-darker: #1F1F1F;
     --dark: #272727;
     --dark-bright: #333333;
@@ -11,24 +18,72 @@
     --light: #F1EBFF;
     --light-bright: #F6F2FF;
     --gray-mix: #49484c;
+    --theme-accent: var(--theme-green);
   }
+
+:root[data-theme="light"] {
+  
+    --theme-green: var(--green-light);
+    --theme-green-hover: var(--green-dark);
+    --theme-red: var(--red-light);
+    --theme-red-hover: var(--red-dark);
+    --theme-blue: var(--blue-light);
+    --theme-blue-hover: var(--blue-dark);
+    --theme-yellow: var(--yellow-light);
+    --theme-yellow-hover: var(--yellow-dark);
+    --background: var(--light);
+    --background-secondary: var(--light-darker);
+    --background-light: var(--light-bright);
+    --text: var(--dark);
+    --text-secondary: var(--dark-bright);
+    --theme-accent: var(--theme-green);
+    --theme-accent-hover: var(--theme-green-hover);
+}
+
+:root[data-theme="dark"] {
+  
+    --theme-green: var(--green-dark);
+    --theme-green-hover: var(--green-darker);
+    --theme-red: var(--red-dark);
+    --theme-red-hover: var(--red-darker);
+    --theme-blue: var(--blue-dark);
+    --theme-blue-hover: var(--blue-darker);
+    --theme-yellow: var(--yellow-dark);
+    --theme-yellow-hover: var(--yellow-darker);
+    --background: var(--dark);
+    --background-secondary: var(--dark-darker);
+    --background-light: var(--dark-bright);
+    --text: var(--light);
+    --text-secondary: var(--light-bright);
+    --theme-accent: var(--theme-green);
+    --theme-accent-hover: var(--theme-green-hover);
+}
 
 html, body {
     -ms-overflow-style: none; 
-    background: var(--dark);
+    background: var(--background);
+    color: var(--text);
     margin: 0px;
 }
 @font-face {
     font-family: 'Unbounded'; 
-    src: url('../src/assets/fonts/Unbounded-VariableFont_wght.ttf'); 
+    src: url('assets/fonts/Unbounded-VariableFont_wght.ttf'); 
   }
 @font-face {
     font-family: 'Lora'; 
-    src: url('../src/assets/fonts/Lora-VariableFont_wght.ttf'); 
+    src: url('assets/fonts/Lora-VariableFont_wght.ttf'); 
   }
+@font-face {
+  font-family: 'UnifrakturCook';
+  src: url('assets/fonts/UnifrakturCook-Bold.ttf');
+}
 .unbounded-display {
     font-family: 'Unbounded';
     font-weight: 900;
+}
+.unifraktur-display {
+  font-family: 'UnifrakturCook';
+  font-weight: 900;
 }
 .lora-text {
   font-family: 'Lora';
@@ -45,8 +100,24 @@ html, body {
 .content {
   margin: 0 3.25rem;
 }
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 900;
+  color: var(--text);
+}
 h1 {
   font-size: 2.5rem;
-  font-weight: 900;
-  color: var(--light);
+}
+h2 {
+  font-size: 2rem;
+}
+h3 {
+  font-size: 1.75rem;
+}
+h4 {
+  font-size: 1.5rem;
+}
+hr {
+  border: none;
+  border-top: 1px solid var(--text);
+  margin: .5rem 0;
 }

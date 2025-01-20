@@ -12,10 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "nationstage",
+        "title": "NationStage",
         "width": 1600,
         "height": 900,
-        "decorations": false
+        "minHeight": 640,
+        "minWidth": 1120,
+        "decorations": false,
+        "transparent": true,
+        "resizable": true
       }
     ],
     "security": {
