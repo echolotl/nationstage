@@ -1,6 +1,6 @@
 {
   "name": "nationstage",
-  "version": "0.1.0",
+  "version": "0.2.5",
   "description": "",
   "type": "module",
   "scripts": {
@@ -15,9 +15,17 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@bbob/core": "^4.2.0",
+    "@bbob/html": "^4.2.0",
+    "@bbob/parser": "^4.2.0",
+    "@bbob/preset-html5": "^4.2.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2.2.4",
-    "fast-xml-parser": "^4.5.1"
+    "bbcode-parser": "^1.0.10",
+    "bbcode-ts": "^1.0.4",
+    "chart.js": "^4.4.7",
+    "fast-xml-parser": "^4.5.1",
+    "svelte-chartjs": "^3.1.5"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",

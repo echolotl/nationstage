@@ -7,6 +7,9 @@
     import type { Issue } from '$lib/types/issues';
     import Content from '$lib/components/content.svelte';
     import NewspaperCard from '$lib/components/NewspaperCard.svelte';
+    import { parseIssueResults } from '$lib/utils/parseIssueResults';
+    import { invoke } from '@tauri-apps/api/core';
+    import { auth } from '$lib/stores/auth';
     
     const issueId = $page.params.id;
     let issue: Issue | undefined;
@@ -35,6 +38,12 @@
             const nationName = newspaperData.querySelector('NAME')?.textContent;
             
             newspaperName = getNewspaperName(customCapital || nationName || '');
+
+            // Update Discord presence
+            await invoke('update_discord_presence', {
+                details: `Playing as ${$auth.nation}`,
+                state: `Reading Issue: ${issue?.title || 'Unknown Issue'}`
+            });
         } catch (err) {
             error = 'Failed to load data';
             console.error(err);
@@ -42,12 +51,13 @@
     }
 
     async function handleAnswer(optionId: string) {
-        if (!confirm('Are you sure you want to submit this answer?')) return;
-        
         loading = true;
         try {
-            await answerIssue(issueId, optionId);
-            await goto('/issues');
+            const response = await answerIssue(issueId, optionId);
+            console.log('Raw API response:', response); // Debug: Log raw response
+            const result = parseIssueResults(response);
+            const encodedData = encodeURIComponent(JSON.stringify(result));
+            await goto(`/issues/results?data=${encodedData}`);
         } catch (err) {
             error = 'Failed to submit answer';
             console.error(err);
@@ -80,7 +90,7 @@
 
         <div class="description">
             <h3 class="section-title">The Issue</h3>
-            <p class="lora-text">{issue.text}</p>
+            <p class="lora-text">{@html issue.text}</p>
         </div>
 
         

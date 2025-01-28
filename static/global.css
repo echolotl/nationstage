@@ -11,13 +11,23 @@
     --yellow-darker: #e49733;
     --yellow-dark: #FFBF46;
     --yellow-light: #ffc861;
+    --purple-darker: #8a7ab6;
+    --purple-dark: #9593D9;
+    --purple-light: #a6b3eb;
+    --orange-darker: #dd5d13;
+    --orange-dark: #EC7D10;
+    --orange-light: #f79e18;
+    --brown-darker: #836846;
+    --brown-dark: #918450;
+    --brown-light: #989c5b;
     --dark-darker: #1F1F1F;
     --dark: #272727;
     --dark-bright: #333333;
-    --light-darker: #E2D6FF;
-    --light: #F1EBFF;
-    --light-bright: #F6F2FF;
-    --gray-mix: #49484c;
+    --light-darker: #eef5f0;
+    --light: #f5faf6;
+    --light-bright: #ffffff;
+    --gray-light: #c9d8cd;
+    --gray-dark: #303030;
     --theme-accent: var(--theme-green);
   }
 
@@ -31,6 +41,12 @@
     --theme-blue-hover: var(--blue-dark);
     --theme-yellow: var(--yellow-light);
     --theme-yellow-hover: var(--yellow-dark);
+    --theme-purple: var(--purple-light);
+    --theme-purple-hover: var(--purple-dark);
+    --theme-orange: var(--orange-light);
+    --theme-orange-hover: var(--orange-dark);
+    --theme-brown: var(--brown-light);
+    --theme-brown-hover: var(--brown-dark);
     --background: var(--light);
     --background-secondary: var(--light-darker);
     --background-light: var(--light-bright);
@@ -38,6 +54,7 @@
     --text-secondary: var(--dark-bright);
     --theme-accent: var(--theme-green);
     --theme-accent-hover: var(--theme-green-hover);
+    --gray-mixed: var(--gray-light);
 }
 
 :root[data-theme="dark"] {
@@ -50,6 +67,12 @@
     --theme-blue-hover: var(--blue-darker);
     --theme-yellow: var(--yellow-dark);
     --theme-yellow-hover: var(--yellow-darker);
+    --theme-purple: var(--purple-dark);
+    --theme-purple-hover: var(--purple-darker);
+    --theme-orange: var(--orange-dark);
+    --theme-orange-hover: var(--orange-darker);
+    --theme-brown: var(--brown-dark);
+    --theme-brown-hover: var(--brown-darker);
     --background: var(--dark);
     --background-secondary: var(--dark-darker);
     --background-light: var(--dark-bright);
@@ -57,6 +80,7 @@
     --text-secondary: var(--light-bright);
     --theme-accent: var(--theme-green);
     --theme-accent-hover: var(--theme-green-hover);
+    --gray-mixed: var(--gray-dark);
 }
 
 html, body {
@@ -77,6 +101,10 @@ html, body {
   font-family: 'UnifrakturCook';
   src: url('assets/fonts/UnifrakturCook-Bold.ttf');
 }
+@font-face {
+  font-family: 'Inter';
+  src: url('assets/fonts/Inter.ttf');
+}
 .unbounded-display {
     font-family: 'Unbounded';
     font-weight: 900;
@@ -92,6 +120,10 @@ html, body {
 .lora-display {
   font-family: 'Lora';
   font-weight: 900;
+}
+.inter-text {
+  font-family: 'Inter';
+  font-weight: 400;
 }
 ::-webkit-scrollbar {
     display: none;
@@ -120,4 +152,83 @@ hr {
   border: none;
   border-top: 1px solid var(--text);
   margin: .5rem 0;
+}
+a {
+  text-decoration: none;
+  color: inherit;
+}
+a:hover {
+  text-decoration: underline;
+  color: inherit;
+}
+.external-link {
+  color: var(--theme-accent) !important;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.external-link:hover {
+  text-decoration: dotted underline 2px;
+  text-decoration-color: var(--theme-blue) !important;
+}
+
+.nation-link {
+  color: var(--theme-accent) !important;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.region-link {
+  color: var(--theme-yellow) !important;
+  text-decoration: none;
+  font-weight: 500;
+}
+.ranking-link {
+  color: var(--theme-green) !important;
+  text-decoration: none;
+  font-weight: 500;
+}
+.bb-box {
+  background: var(--background-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--gray-mixed);
+  padding: 1rem;
+}
+.bb-box::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+.bb-table {
+  width: 100%;
+  border-spacing: none;
+  border: none;
+}
+.bb-table tbody tr {
+  border: 1px solid var(--gray-mixed);
+}
+.bb-table tbody tr:first-child {
+  border: none;
+  background: var(--background-secondary);
+  td {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border: 1px solid var(--gray-mixed);
+    border-bottom: none;
+  }
+}
+.bb-table tbody tr:last-child td {
+  border: none !important;
+}
+.bb-table tbody td {
+  border: none;
+  border-bottom: 1px solid var(--gray-mixed);
+  padding: .5rem 0;
+}
+.bb-table tbody {
+  border: none;
+}
+.bb-table p {
+  margin: 0;
+  margin-left: 1rem;
 }

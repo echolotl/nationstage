@@ -1,3 +1,16 @@
+import { XMLParser } from 'fast-xml-parser';
+
+export interface Officer {
+    nation: string;
+    office: string;
+    authority: string;
+    time: number;
+    by: string;
+    order: number;
+    flagUrl?: string; // Added for storing the flag URL
+    fullname?: string;
+}
+
 export interface RegionDetails {
     name: string;
     factbook: string;
@@ -9,7 +22,8 @@ export interface RegionDetails {
     delegate: string;
     delegatevotes: number;
     delegateauth: string;
-    officers: string[];
+    officers: Officer[];
+    governor: string;
     embassies: string[];
     tags: string[];
     nations: string[];
@@ -23,43 +37,51 @@ export interface RegionDetails {
 }
 
 export function parseRegionDetails(xmlString: string): RegionDetails {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    const parser = new XMLParser({
+        ignoreAttributes: false,
+        parseTagValue: true
+    });
+    
+    const result = parser.parse(xmlString);
+    const region = result.REGION;
+    
+    console.log('Parsed XML:', result); // Debug
 
-    function getTextContent(tagName: string): string {
-        return xmlDoc.querySelector(tagName)?.textContent || '';
-    }
-
-    function getNumberContent(tagName: string): number {
-        return parseInt(getTextContent(tagName)) || 0;
-    }
-
-    function getArrayContent(tagName: string): string[] {
-        const elements = xmlDoc.querySelectorAll(tagName);
-        return Array.from(elements).map(el => el.textContent || '');
-    }
+    // Handle officers array properly
+    const officers = region.OFFICERS?.OFFICER || [];
+    // Ensure officers is always treated as an array
+    const officersArray = Array.isArray(officers) ? officers : [officers];
 
     return {
-        name: getTextContent('NAME'),
-        factbook: getTextContent('FACTBOOK'),
-        banner: getTextContent('BANNER'),
-        flag: getTextContent('FLAG'),
-        founder: getTextContent('FOUNDER'),
-        founded: getTextContent('FOUNDED'),
-        power: getTextContent('POWER'),
-        delegate: getTextContent('DELEGATE'),
-        delegatevotes: getNumberContent('DELEGATEVOTES'),
-        delegateauth: getTextContent('DELEGATEAUTH'),
-        officers: getArrayContent('OFFICER'),
-        embassies: getArrayContent('EMBASSY'),
-        tags: getArrayContent('TAG'),
-        nations: getArrayContent('NATION'),
-        numunions: getNumberContent('NUMUNIONS'),
-        numnations: getNumberContent('NUMNATIONS'),
-        majorindustry: getTextContent('MAJORINDUSTRY'),
-        govern: getTextContent('GOVERN'),
-        income: getNumberContent('INCOME'),
-        tax: getNumberContent('TAX'),
-        publicsector: getNumberContent('PUBLICSECTOR')
+        name: region.NAME || '',
+        factbook: region.FACTBOOK || '',
+        banner: region.BANNER || '',
+        flag: region.FLAG || '',
+        founder: region.FOUNDER || '',
+        founded: region.FOUNDED || '',
+        power: region.POWER || '',
+        delegate: region.DELEGATE || '',
+        delegatevotes: parseInt(region.DELEGATEVOTES) || 0,
+        delegateauth: region.DELEGATEAUTH || '',
+        officers: officersArray.map(officer => ({
+            nation: officer.NATION || '',
+            office: officer.OFFICE || '',
+            authority: officer.AUTHORITY || '',
+            time: parseInt(officer.TIME) || 0,
+            by: officer.BY || '',
+            order: parseInt(officer.ORDER) || 0,
+            flagUrl: officer.FLAGURL || '' // Added for storing the flag URL
+        })),
+        governor: region.GOVERNOR || '',
+        embassies: Array.isArray(region.EMBASSY) ? region.EMBASSY : [region.EMBASSY].filter(Boolean),
+        tags: Array.isArray(region.TAG) ? region.TAG : [region.TAG].filter(Boolean),
+        nations: (region.NATIONS || '').split(':').filter(Boolean),
+        numunions: parseInt(region.NUMUNIONS) || 0,
+        numnations: parseInt(region.NUMNATIONS) || 0,
+        majorindustry: region.MAJORINDUSTRY || '',
+        govern: region.GOVERN || '',
+        income: parseInt(region.INCOME) || 0,
+        tax: parseInt(region.TAX) || 0,
+        publicsector: parseInt(region.PUBLICSECTOR) || 0
     };
 }

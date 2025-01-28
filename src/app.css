@@ -1,0 +1,13 @@
+/* or wherever your global styles are */
+
+hr {
+    display: block;
+    border: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--theme-accent), transparent);
+    margin: 1.5rem 0;
+    width: 100%;
+    clear: both;
+}
+
+

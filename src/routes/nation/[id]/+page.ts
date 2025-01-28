@@ -1,12 +1,13 @@
 export const ssr = false;
+export const prerender = true;
 
-import type { PageLoad } from './$types';
+import type { PageLoad, PageLoadEvent } from './$types';
 import { getNationDetails, getNationRankings } from '$lib/api/request';
 import { parseNationDetails } from '$lib/utils/parseNationDetails';
 import { parseNationRankings } from '$lib/utils/parseNationRankings';
 import { TopPercentileType } from '$lib/utils/parseNationRankings';
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ params }: PageLoadEvent) => {
     try {
         console.log('Loading data for nation:', params.id); // Debug
 
@@ -15,11 +16,7 @@ export const load: PageLoad = async ({ params }) => {
             getNationRankings(params.id)
         ]);
 
-        console.log('Raw rankings response:', rankingsResponse); // Debug
-        console.log('Raw details response:', detailsResponse); // Debug
-
         const allRankings = parseNationRankings(rankingsResponse);
-        console.log('Parsed rankings:', allRankings); // Debug
         
         const result = {
             nation: parseNationDetails(detailsResponse),

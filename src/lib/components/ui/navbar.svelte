@@ -4,6 +4,7 @@
   import { invoke } from '@tauri-apps/api/core';
   import { notices } from '$lib/stores/notices';
   import { goto } from '$app/navigation';
+  import { navigating } from '$app/stores';
 
   interface AuthData {
     nation: string;
@@ -172,7 +173,17 @@
             ],
           },
         },
-        { label: "World Assembly", path: "/world/wa" },
+        {
+          label: "World Assembly",
+          path: "/world/wa",
+          icon: {
+            viewBox: "0 0 90 75",
+            elements: [{
+              type: "path",
+              attributes: 'd="M80.8,44.2c0-1.11.9-2,2-2h6.45c.02-1.88-.07-3.8-.29-5.73h-5.19c-1.11,0-2-.9-2-2s.9-2,2-2h4.5c-.44-1.89-1.05-3.73-1.89-5.46-.04-.09-.09-.17-.13-.26h-5.52c-1.11,0-2-.9-2-2s.9-2,2-2h3.4c-1.21-2.09-2.47-4-3.77-5.73h-3.68c-1.11,0-2-.9-2-2s.9-2,2-2h.34C66.13,1.19,54.38,0,54.38,0c0,0,17,11,17,26,0,13.57-24.85,31.41-26.86,32.83-3.15-2.25-26.65-19.48-26.65-32.68C17.87,11.15,34.87.15,34.87.15c0,0-11.75,1.19-22.65,13h.34c1.11,0,2,.9,2,2s-.9,2-2,2h-3.68c-1.3,1.73-2.56,3.63-3.77,5.73h3.4c1.11,0,2,.9,2,2s-.9,2-2,2H3.01c-.04.09-.09.17-.13.26-.83,1.73-1.44,3.57-1.89,5.46h4.5c1.11,0,2,.9,2,2s-.9,2-2,2H.29C.07,38.54-.01,40.47,0,42.34h6.45c1.11,0,2,.9,2,2s-.9,2-2,2H.18c.16,2.08.42,4.02.7,5.73h8.53c1.11,0,2,.9,2,2s-.9,2-2,2H1.65c.42,1.88.76,3,.76,3h32.9l-15.44,15.07,15.44.37,9.21-15.11,9.42,14.96,15.44-.37-15.44-15.07h32.9s.34-1.12.76-3h-7.75c-1.11,0-2-.9-2-2s.9-2,2-2h8.53c.28-1.71.54-3.65.7-5.73h-6.27c-1.11,0-2-.9-2-2Z"'
+            }]
+          }
+        },
         { label: "Forum", path: "/world/forum" },
         { label: "Activity", path: "/world/activity" },
       ],
@@ -191,7 +202,7 @@
   $: authNavItems = $isAuthenticated ? [
     {
       label: $currentNation,
-      path: `/nation/${$currentNation}`,
+      path: `/nation/${$currentNation}/overview`,
       icon: {
         viewBox: "0 0 85 85",
         elements: [{
@@ -230,7 +241,7 @@
   }
 </script>
 
-<nav class="nav-container">
+<nav class="nav-container" class:loading={$navigating}>
   <div class="nav-controls">
     <button class="nav-control-btn" on:click={goBack}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1rem" height="1rem">
@@ -486,10 +497,17 @@
     background: var(--background);
   }
 
-  .nav-divider {
-    width: 1px;
-    height: 1.5rem;
-    background: var(--text-secondary);
-    margin: 0 0.5rem;
+  @keyframes gradientBorder {
+    0% {
+      border-image: linear-gradient(to right, var(--theme-accent) 0%, var(--theme-yellow) 50%, var(--theme-accent) 100%) 1;
+    }
+    100% {
+      border-image: linear-gradient(to right, var(--theme-yellow) 0%, var(--theme-accent) 50%, var(--theme-yellow) 100%) 1;
+    }
+  }
+
+  .nav-container.loading {
+    border-image: linear-gradient(to right, var(--theme-accent) 0%, var(--theme-accent-hover) 50%, var(--theme-accent) 100%) 1;
+    animation: gradientBorder 3s ease infinite alternate;
   }
 </style>

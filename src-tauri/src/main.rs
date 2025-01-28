@@ -1,6 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod discord;
+mod nscode;
+
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use reqwest::Client;
 use serde_json;
@@ -10,6 +13,9 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Manager;
 use tauri::State;
+use crate::discord::{DiscordState, initialize_discord, update_discord_presence, toggle_discord_rpc, get_discord_setting};
+use crate::nscode::BBCodeParser;
+use std::sync::Arc;
 
 struct AuthState(Mutex<Option<AuthStateData>>);
 
@@ -18,6 +24,7 @@ struct AuthCredentials {
     nation: String,
     autologin: String,
     region: String,
+    leader_name: Option<String>, // Add leader name field
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -29,6 +36,26 @@ struct SavedAccounts {
 struct AuthStateData {
     credentials: AuthCredentials,
     pin: String, // PIN stored only in memory
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct Bookmark {
+    id: String,
+    name: String,
+    r#type: String, // "nation" or "region"
+    flag: String,
+    banner: String,  // Add banner field
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct Bookmarks {
+    items: Vec<Bookmark>,
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct UserData {
+    leader_name: Option<String>,
+    // Add other user-specific data here in the future
 }
 
 fn get_credentials_path() -> PathBuf {
@@ -45,9 +72,22 @@ fn get_credentials_path() -> PathBuf {
     };
 
     // Add the application identifier path
-    path.push("com.nationstage.dev");
+    path.push("com.echolotl.lol");
+    path.push("nationstage");
     path.push("credentials.json");
     println!("Credentials path: {:?}", path); // Debug
+    path
+}
+
+fn get_bookmarks_path() -> PathBuf {
+    let mut path = get_credentials_path();
+    path.set_file_name("bookmarks.json");
+    path
+}
+
+fn get_data_path() -> PathBuf {
+    let mut path = get_credentials_path();
+    path.set_file_name("data.json");
     path
 }
 
@@ -82,6 +122,18 @@ fn load_saved_credentials() -> Option<AuthCredentials> {
     }
 }
 
+fn load_user_data() -> UserData {
+    let path = get_data_path();
+    if path.exists() {
+        if let Ok(contents) = fs::read_to_string(&path) {
+            if let Ok(data) = serde_json::from_str(&contents) {
+                return data;
+            }
+        }
+    }
+    UserData { leader_name: None }
+}
+
 fn save_credentials(credentials: &AuthCredentials) -> Result<(), String> {
     let path = get_credentials_path();
     if let Some(parent) = path.parent() {
@@ -110,7 +162,7 @@ fn clear_saved_credentials() {
 
 #[tauri::command]
 fn get_user_agent() -> String {
-    format!("NationStage/0.1.0 (by Taelboa)")
+    format!("NationStage/0.3.0 (by Taelboa)")
 }
 
 #[tauri::command]
@@ -139,6 +191,7 @@ async fn save_auth(
         nation,
         autologin,
         region,
+        leader_name: None, // Initialize with None
     };
     let auth_data = AuthStateData {
         credentials: credentials.clone(),
@@ -231,7 +284,102 @@ fn get_pin(state: State<'_, AuthState>) -> Option<String> {
         .map(|data| data.pin.clone())
 }
 
+#[tauri::command]
+async fn save_bookmark(bookmark: Bookmark) -> Result<(), String> {
+    let path = get_bookmarks_path();
+    let mut bookmarks = if path.exists() {
+        let contents = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&contents).unwrap_or(Bookmarks { items: vec![] })
+    } else {
+        Bookmarks { items: vec![] }
+    };
+
+    // Remove if already exists
+    bookmarks.items.retain(|b| b.id != bookmark.id);
+    bookmarks.items.push(bookmark);
+
+    let json = serde_json::to_string(&bookmarks).map_err(|e| e.to_string())?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn remove_bookmark(id: String) -> Result<(), String> {
+    let path = get_bookmarks_path();
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let contents = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let mut bookmarks: Bookmarks = serde_json::from_str(&contents).map_err(|e| e.to_string())?;
+    bookmarks.items.retain(|b| b.id != id);
+
+    let json = serde_json::to_string(&bookmarks).map_err(|e| e.to_string())?;
+    fs::write(path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_bookmarks() -> Result<Bookmarks, String> {
+    let path = get_bookmarks_path();
+    if !path.exists() {
+        return Ok(Bookmarks { items: vec![] });
+    }
+
+    let contents = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let bookmarks: Bookmarks = serde_json::from_str(&contents).map_err(|e| e.to_string())?;
+    Ok(bookmarks)
+}
+
+#[tauri::command]
+async fn update_leader_name(name: String) -> Result<(), String> {
+    let path = get_data_path();
+    let mut data = load_user_data();
+    data.leader_name = Some(name);
+    
+    let json = serde_json::to_string(&data).map_err(|e| e.to_string())?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_user_data() -> Result<UserData, String> {
+    Ok(load_user_data())
+}
+
+#[tauri::command]
+fn parse_bbcode(input: String) -> String {
+    println!("BBCode parser received input length: {}", input.chars().count());
+    // Use safe string slicing for UTF-8
+    let preview: String = input.chars().take(100).collect();
+    println!("First 100 chars of input: {}", preview);
+    
+    let parser = BBCodeParser::new();
+    let result = parser.parse(&input);
+    
+    println!("BBCode parser result length: {}", result.chars().count());
+    let result_preview: String = result.chars().take(100).collect();
+    println!("First 100 chars of result: {}", result_preview);
+    
+    result
+}
+
+#[tauri::command]
+fn add_custom_tag(name: String, template: String) -> Result<(), String> {
+    let mut parser = BBCodeParser::new();
+    parser.add_simple_tag(&name, &template);
+    Ok(())
+}
+
 fn main() {
+    let discord = initialize_discord();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
@@ -245,6 +393,7 @@ fn main() {
             }
             Ok(())
         })
+        .manage(DiscordState(Arc::new(Mutex::new(discord))))
         .manage(AuthState(Default::default()))
         .invoke_handler(tauri::generate_handler![
             save_auth,
@@ -255,7 +404,17 @@ fn main() {
             get_user_agent,
             fetch_image,
             update_pin,
-            get_pin
+            get_pin,
+            update_discord_presence,
+            toggle_discord_rpc,
+            get_discord_setting,
+            save_bookmark,
+            remove_bookmark,
+            get_bookmarks,
+            update_leader_name,
+            get_user_data,
+            parse_bbcode,
+            add_custom_tag,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

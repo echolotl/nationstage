@@ -4,7 +4,18 @@ let originalColor: string | null = null;
 let originalHoverColor: string | null = null;
 
 function getRGBFromString(color: string): number[] {
-    return color.replace(/[^\d,]/g, '').split(',').map(n => parseInt(n));
+    if (color.startsWith('rgb')) {
+        return color.match(/\d+/g)?.map(Number) || [0, 0, 0];
+    }
+    if (color.startsWith('#')) {
+        const hex = color.slice(1);
+        return [
+            parseInt(hex.slice(0, 2), 16),
+            parseInt(hex.slice(2, 4), 16),
+            parseInt(hex.slice(4, 6), 16)
+        ];
+    }
+    return [0, 0, 0];
 }
 
 function luminance(r: number, g: number, b: number): number {
@@ -25,52 +36,24 @@ function getContrastRatio(color1: string, color2: string): number {
     return (lightest + 0.05) / (darkest + 0.05);
 }
 
-function getBrightness(r: number, g: number, b: number): number {
-    // Using perceived brightness formula
-    return (r * 299 + g * 587 + b * 114) / 1000;
-}
-
-function adjustColor(color: string, backgroundIsDark: boolean): string {
-    const rgb = getRGBFromString(color);
-    const brightness = getBrightness(rgb[0], rgb[1], rgb[2]);
-    
-    // Minimum brightness thresholds
-    const MIN_BRIGHT_MODE = 125; // For dark backgrounds
-    const MIN_DARK_MODE = 50;    // For light backgrounds
-    
-    let adjustment = 1;
-    if (backgroundIsDark) {
-        // For dark backgrounds, ensure color is bright enough
-        if (brightness < MIN_BRIGHT_MODE) {
-            adjustment = MIN_BRIGHT_MODE / brightness;
-        }
-    } else {
-        // For light backgrounds, ensure color is dark enough
-        if (brightness > MIN_DARK_MODE) {
-            adjustment = MIN_DARK_MODE / brightness;
-        }
-    }
-    
-    const adjusted = rgb.map(component => {
-        const newValue = Math.floor(component * adjustment);
-        return Math.min(255, Math.max(0, newValue));
-    });
-    
-    return `rgb(${adjusted.join(', ')})`;
-}
-
 function ensureReadableColor(color: string, background: string): string {
-    const MIN_CONTRAST = 4.5; // WCAG AA standard
+    const MIN_CONTRAST = 4.5;
     let adjustedColor = color;
     const rgbBackground = getRGBFromString(background);
-    const backgroundIsDark = luminance(rgbBackground[0], rgbBackground[1], rgbBackground[2]) < 0.5;
+    const backgroundLuminance = luminance(rgbBackground[0], rgbBackground[1], rgbBackground[2]);
+    const backgroundIsDark = backgroundLuminance < 0.5;
     
     let contrastRatio = getContrastRatio(adjustedColor, background);
     let attempts = 0;
-    const MAX_ATTEMPTS = 5;
+    const MAX_ATTEMPTS = 30;
+    const ADJUSTMENT_STEP = backgroundIsDark ? 30 : -30;
 
     while (contrastRatio < MIN_CONTRAST && attempts < MAX_ATTEMPTS) {
-        adjustedColor = adjustColor(adjustedColor, backgroundIsDark);
+        const rgb = getRGBFromString(adjustedColor);
+        const adjusted = rgb.map(value => {
+            return Math.min(255, Math.max(0, value + ADJUSTMENT_STEP));
+        });
+        adjustedColor = `rgb(${adjusted.join(', ')})`;
         contrastRatio = getContrastRatio(adjustedColor, background);
         attempts++;
     }
@@ -188,5 +171,32 @@ export function resetThemeColor(): void {
     }
     if (originalHoverColor) {
         document.documentElement.style.setProperty('--theme-accent-hover', originalHoverColor);
+    }
+}
+
+export function setManualColors(baseColor: string, hoverColor?: string): void {
+    try {
+        // Store original colors if not already stored
+        if (!originalColor) {
+            originalColor = getComputedStyle(document.documentElement)
+                .getPropertyValue('--theme-accent')
+                .trim();
+        }
+        if (!originalHoverColor) {
+            originalHoverColor = getComputedStyle(document.documentElement)
+                .getPropertyValue('--theme-accent-hover')
+                .trim();
+        }
+
+        // If hover color isn't provided, generate it from the base color
+        const finalHoverColor = hoverColor || darkenColor(baseColor);
+
+        // Update the colors
+        requestAnimationFrame(() => {
+            document.documentElement.style.setProperty('--theme-accent', baseColor);
+            document.documentElement.style.setProperty('--theme-accent-hover', finalHoverColor);
+        });
+    } catch (error) {
+        console.error('Failed to set manual colors:', error);
     }
 }

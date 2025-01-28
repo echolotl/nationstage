@@ -16,3 +16,18 @@ export interface Issue {
         text: string;
     }[];
 }
+
+export interface IssueResult {
+    ok: boolean;
+    error?: string;
+    description: string;
+    rankings?: {
+        name: string;
+        change: number;
+    }[];
+    headlines?: string[];
+    unlocks?: string[];
+    reclassifications?: string[];
+    newPolicies?: string[];
+    removedPolicies?: string[];
+}

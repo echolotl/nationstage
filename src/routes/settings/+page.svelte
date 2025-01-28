@@ -4,6 +4,8 @@
     import Content from '$lib/components/content.svelte';
     import { themeIcons } from '$lib/utils/themeIcons';
     import { goto } from '$app/navigation';
+    import { invoke } from '@tauri-apps/api/core';
+    import { onMount } from 'svelte';
 
     function toggleTheme() {
         $theme = $theme === 'light' ? 'dark' : 'light';
@@ -11,6 +13,7 @@
 
     let nationInput = '';
     let regionInput = '';
+    let discordEnabled = false;
 
     function goToNation() {
         if (nationInput) goto(`/nation/${nationInput.toLowerCase()}`);
@@ -32,6 +35,28 @@
             console.error('Failed to switch account');
         }
     }
+
+    async function toggleDiscordRPC() {
+        try {
+            await invoke('toggle_discord_rpc', { enabled: !discordEnabled });
+            discordEnabled = !discordEnabled;
+        } catch (error) {
+            console.error('Failed to toggle Discord RPC:', error);
+        }
+    }
+
+    // Load initial state
+    onMount(async () => {
+        try {
+            discordEnabled = await invoke('get_discord_setting');
+            await invoke('update_discord_presence', {
+                details: `Playing as ${$auth.nation}`,
+                state: "In the settings"
+            });
+        } catch (error) {
+            console.error('Failed to load Discord RPC setting:', error);
+        }
+    });
 </script>
 
 <Content>
@@ -129,6 +154,20 @@
                     >
                     <button on:click={goToRegion}>Go</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <h2>Integrations</h2>
+            <div class="setting-item">
+                <span>Discord Rich Presence</span>
+                <button 
+                    class="toggle-button" 
+                    class:enabled={discordEnabled}
+                    on:click={toggleDiscordRPC}
+                >
+                    {discordEnabled ? 'Enabled' : 'Disabled'}
+                </button>
             </div>
         </div>
     </div>
@@ -232,5 +271,18 @@
 
     .account-button:hover {
         background: var(--background-light) !important;
+    }
+
+    .toggle-button {
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .toggle-button.enabled {
+        background: var(--theme-accent);
+        color: white;
     }
 </style>

@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     import { handleLogin } from '$lib/stores/auth';
     import { openUrl } from '@tauri-apps/plugin-opener';
+    import { rateLimiter } from '$lib/api/rateLimit';
     
     let nation: string = '';
     let password: string = '';
@@ -14,15 +15,22 @@
         loading = true;
         
         try {
-            const success = await handleLogin(nation, password, rememberMe);
+            const success = await rateLimiter.enqueue(async () => {
+                return await handleLogin(nation, password, rememberMe);
+            });
+            
             if (success) {
                 await goto('/');
             } else {
                 error = 'Login failed. Please check your credentials.';
             }
         } catch (e) {
-            error = 'An unexpected error occurred.';
-            console.error(e);
+            if (e instanceof Error && e.message.includes('rate limit')) {
+                error = 'Too many login attempts. Please try again later.';
+            } else {
+                error = 'An unexpected error occurred.';
+                console.error(e);
+            }
         } finally {
             loading = false;
         }

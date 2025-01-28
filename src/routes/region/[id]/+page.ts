@@ -18,4 +18,4 @@ export const load: PageLoad = async ({ params }) => {
             region: null
         };
     }
-}; 
+};

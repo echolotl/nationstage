@@ -109,10 +109,11 @@
     
     .issue-images img {
         width: 100%;
-        height: 100%;
+        min-height: 180px;
         object-fit: cover;
-        border: solid 4px var(--gray-mix);
+        border: solid 4px rgb(59, 59, 59);
         border-bottom: none;
+        z-index: 3;
     }
     
     .issue-images img:first-child {

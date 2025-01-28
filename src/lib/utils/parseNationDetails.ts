@@ -43,9 +43,18 @@ export interface NationDetails {
     type: string;
     tax: string;
     wa: string;
+    census: CensusEntry[];
+}
+
+interface CensusEntry {
+    id: number;
+    score: number;
+    rank: number;
+    relativeRank: number;
 }
 
 export function parseNationDetails(xmlString: string): NationDetails {
+    console.log('Parsing details XML:', xmlString.substring(0, 200) + '...'); // Debug XML input
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
@@ -60,6 +69,16 @@ export function parseNationDetails(xmlString: string): NationDetails {
     function getArrayContent(tagName: string): string[] {
         const elements = xmlDoc.querySelectorAll(tagName);
         return Array.from(elements).map(el => el.textContent || '');
+    }
+
+    function parseCensusData(): CensusEntry[] {
+        const censusElements = xmlDoc.querySelectorAll('CENSUS SCALE');
+        return Array.from(censusElements).map(scale => ({
+            id: parseInt(scale.getAttribute('id') || '0'),
+            score: parseFloat(scale.querySelector('SCORE')?.textContent || '0'),
+            rank: parseInt(scale.querySelector('RANK')?.textContent || '0'),
+            relativeRank: parseInt(scale.querySelector('RRANK')?.textContent || '0')
+        }));
     }
 
     const freedomTags = xmlDoc.querySelector('FREEDOM');
@@ -113,6 +132,7 @@ export function parseNationDetails(xmlString: string): NationDetails {
         sensibilities: getTextContent('SENSIBILITIES'),
         type: getTextContent('TYPE'),
         tax: getTextContent('TAX'),
-        wa: getTextContent('WA')
+        wa: getTextContent('WA'),
+        census: parseCensusData()
     };
 }
