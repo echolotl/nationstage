@@ -3,6 +3,13 @@ export interface Option {
     text: string;
 }
 
+export interface Policy {
+    name: string;
+    pictureId: string;
+    category: string;
+    description: string;
+}
+
 export interface Issue {
     id: string;
     title: string;
@@ -22,12 +29,13 @@ export interface IssueResult {
     error?: string;
     description: string;
     rankings?: {
+        id: number;
         name: string;
         change: number;
     }[];
     headlines?: string[];
     unlocks?: string[];
     reclassifications?: string[];
-    newPolicies?: string[];
-    removedPolicies?: string[];
+    newPolicies?: Policy[];
+    removedPolicies?: Policy[];
 }

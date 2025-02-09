@@ -5,7 +5,7 @@
   import { bookmarks } from '$lib/stores/bookmarks';
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
-  import { getLeaderName, getIssues, getUnreadNotices } from '$lib/api/request';
+  import { getLeaderName, getIssues, getAllUnread } from '$lib/api/request';
   import { parseIssues } from '$lib/utils/parseIssues';
   import { parseNotices } from '$lib/utils/parseNotices';
   import { noticeIcons } from '$lib/utils/noticeIcons';
@@ -17,49 +17,85 @@
   let leaderName = '';
   let issues: Issue[] = [];
   let notices: Notice[] = [];
+  let isLoading = true;
   
   async function initializeDashboard() {
     if (!mounted) return;
     
     try {
+      isLoading = true;
       await invoke('update_discord_presence', {
         details: `Playing as ${$auth.nation}`,
         state: "On the dashboard"
       }).catch(() => {}); // Ignore discord presence errors
       
-      await bookmarks.init();
-      recentBookmarks = $bookmarks.slice(0, 5);
-
-      // Try to get saved leader name first
+      // Get leader name first before loading other content
       const userData = await invoke<{ leader_name?: string }>('get_user_data');
-      if (userData?.leader_name) {
-        leaderName = userData.leader_name;
-      } else {
-        // If not saved, fetch from API and save
+      
+      // If saved name exists and equals nation name, check for updates
+      if (userData?.leader_name === $auth.nation) {
         const leaderXml = await getLeaderName($auth.nation);
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(leaderXml, "text/xml");
         const customLeader = xmlDoc.querySelector('CUSTOMLEADER')?.textContent;
         const defaultLeader = xmlDoc.querySelector('LEADER')?.textContent;
-        leaderName = customLeader || defaultLeader || $auth.nation;
+        
+        // Only update if there's a valid new leader name
+        if (customLeader && customLeader !== "Leader" && customLeader !== "") {
+          leaderName = customLeader;
+          await invoke('update_leader_name', { name: leaderName });
+        } else if (defaultLeader && defaultLeader !== "Leader" && defaultLeader !== "") {
+          leaderName = defaultLeader;
+          await invoke('update_leader_name', { name: leaderName });
+        } else {
+          leaderName = $auth.nation;
+        }
+      }
+      // If saved name exists and is valid, use it
+      else if (userData?.leader_name && userData.leader_name !== "Leader" && userData.leader_name !== "") {
+        leaderName = userData.leader_name;
+      }
+      // If no valid saved name, fetch from API
+      else {
+        const leaderXml = await getLeaderName($auth.nation);
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(leaderXml, "text/xml");
+        const customLeader = xmlDoc.querySelector('CUSTOMLEADER')?.textContent;
+        const defaultLeader = xmlDoc.querySelector('LEADER')?.textContent;
+        
+        if (customLeader && customLeader !== "Leader" && customLeader !== "") {
+          leaderName = customLeader;
+        } else if (defaultLeader && defaultLeader !== "Leader" && defaultLeader !== "") {
+          leaderName = defaultLeader;
+        } else {
+          leaderName = $auth.nation;
+        }
         
         // Save the leader name
         await invoke('update_leader_name', { name: leaderName });
       }
 
-      // Load issues and notices
-      const [issuesResponse, noticesResponse] = await Promise.all([
-        getIssues(),
-        getUnreadNotices()
+      // After leader name is set, load the rest
+      await Promise.all([
+        (async () => {
+          await bookmarks.init();
+          recentBookmarks = $bookmarks.slice(0, 5);
+        })(),
+        (async () => {
+          const [issuesResponse, noticesResponse] = await Promise.all([
+            getIssues(),
+            getAllUnread()
+          ]);
+          issues = parseIssues(issuesResponse);
+          notices = parseNotices(noticesResponse);
+        })()
       ]);
 
-      console.log(noticesResponse);
-      
-      issues = parseIssues(issuesResponse);
-      notices = parseNotices(noticesResponse);
     } catch (error) {
       console.error('Failed to initialize dashboard:', error);
       leaderName = $auth.nation; // Fallback to nation name
+    } finally {
+      isLoading = false;
     }
   }
   
@@ -74,100 +110,106 @@
 </script>
   
 <Content>
-  <div class="dashboard">
-    <h1 class="welcome-text lora-display">Welcome back, {leaderName}!</h1>
-
-    <div class="dashboard-grid">
-      <!-- Bookmarks Section -->
-      <section class="dashboard-section">
-        <div class="section-content">
-        <div class="section-header">
-          <h2 class="lora-text">Bookmarks</h2>
-          <button class="view-all" on:click={() => goto('/favorites')}>
-            View All
-          </button>
-        </div>
-        <div class="favorites-grid">
-          {#each recentBookmarks as bookmark}
-            <a href="/{bookmark.type}/{bookmark.id}" class="favorite-card">
-              <img src={bookmark.flag} alt={`${bookmark.name} flag`} class="favorite-flag"/>
-              <div class="favorite-info lora-text">
-                <span class="favorite-name">{bookmark.name}</span>
-                <span class="favorite-type">{bookmark.type}</span>
-              </div>
-            </a>
-          {/each}
-        </div>
-        </div>
-      </section>
-
-      <!-- Issues Section -->
-      <section class="dashboard-section">
-        <div class="section-content">
-        <div class="section-header">
-          <h2 class="lora-text">Unresolved Issues</h2>
-          <button class="view-all" on:click={() => goto('/issues')}>
-            View All
-          </button>
-        </div>
-        <div class="issues-list lora-text">
-          {#each issues as issue}
-            <a href="/issues/{issue.id}" class="issue-card">
-              <span class="issue-title">{issue.title}</span>
-            </a>
-          {/each}
-        </div>
-        </div>
-      </section>
-
-      <!-- Notices Section -->
-      <section class="dashboard-section">
-        <div class="section-content">
-        <div class="section-header">
-          <h2 class="lora-text">Unread Notices ({notices.length})</h2>
-          <button class="view-all" on:click={() => goto('/notices')}>
-            View All
-          </button>
-        </div>
-        <div class="notices-list">
-          {#if notices.length === 0}
-            <div class="notice-card lora-text">
-              <span class="notice-empty">No unread notices</span>
-            </div>
-          {:else}
-            {#each notices as notice}
-              <div class="notice-card lora-text">
-                <div class="notice-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" viewBox="0 0 24 24">
-                  {@html noticeIcons[notice.icon || 'male']}
-                  </svg>
-                </div>
-                <div class="notice-content">
-                  <span class="notice-title">{notice.title}</span>
-                <span class="notice-type">
-                  {#if notice.icon === "award"}
-                    Ranking
-                  {:else if notice.icon === "bell"}
-                    Notification
-                  {:else if notice.icon === "male"}
-                    New Issue
-                  {:else if notice.icon === "lock-open"}
-                    Unlock!
-                  {:else if notice.icon === "mail-alt"}
-                    Message
-                  {:else}
-                    Notice
-                  {/if}
-                </span>
-                </div>
-              </div>
-            {/each}
-          {/if}
-        </div>
-      </div>
-      </section>
+  {#if isLoading}
+    <div class="loading">
+      <span class="loading-text lora-text">Loading...</span>
     </div>
-  </div>
+  {:else}
+    <div class="dashboard">
+      <h1 class="welcome-text lora-display">Welcome back, {leaderName}!</h1>
+
+      <div class="dashboard-grid">
+        <!-- Bookmarks Section -->
+        <section class="dashboard-section">
+          <div class="section-content">
+          <div class="section-header">
+            <h2 class="lora-text">Bookmarks</h2>
+            <button class="view-all" on:click={() => goto('/favorites')}>
+              View All
+            </button>
+          </div>
+          <div class="favorites-grid">
+            {#each recentBookmarks as bookmark}
+              <a href="/{bookmark.type}/{bookmark.id}" class="favorite-card">
+                <img src={bookmark.flag} alt={`${bookmark.name} flag`} class="favorite-flag"/>
+                <div class="favorite-info lora-text">
+                  <span class="favorite-name">{bookmark.name}</span>
+                  <span class="favorite-type">{bookmark.type}</span>
+                </div>
+              </a>
+            {/each}
+          </div>
+          </div>
+        </section>
+
+        <!-- Issues Section -->
+        <section class="dashboard-section">
+          <div class="section-content">
+          <div class="section-header">
+            <h2 class="lora-text">Unresolved Issues</h2>
+            <button class="view-all" on:click={() => goto('/issues')}>
+              View All
+            </button>
+          </div>
+          <div class="issues-list lora-text">
+            {#each issues as issue}
+              <a href="/issues/{issue.id}" class="issue-card">
+                <span class="issue-title">{issue.title}</span>
+              </a>
+            {/each}
+          </div>
+          </div>
+        </section>
+
+        <!-- Notices Section -->
+        <section class="dashboard-section">
+          <div class="section-content">
+          <div class="section-header">
+            <h2 class="lora-text">Unread Notices ({notices.length})</h2>
+            <button class="view-all" on:click={() => goto('/notices')}>
+              View All
+            </button>
+          </div>
+          <div class="notices-list">
+            {#if notices.length === 0}
+              <div class="notice-card lora-text">
+                <span class="notice-empty">No unread notices</span>
+              </div>
+            {:else}
+              {#each notices as notice}
+                <div class="notice-card lora-text">
+                  <div class="notice-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="2rem" viewBox="0 0 24 24">
+                    {@html noticeIcons[notice.icon || 'male']}
+                    </svg>
+                  </div>
+                  <div class="notice-content">
+                    <span class="notice-title">{notice.title}</span>
+                  <span class="notice-type">
+                    {#if notice.icon === "award"}
+                      Ranking
+                    {:else if notice.icon === "bell"}
+                      Notification
+                    {:else if notice.icon === "male"}
+                      New Issue
+                    {:else if notice.icon === "lock-open"}
+                      Unlock!
+                    {:else if notice.icon === "mail-alt"}
+                      Message
+                    {:else}
+                      Notice
+                    {/if}
+                  </span>
+                  </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        </div>
+        </section>
+      </div>
+    </div>
+  {/if}
 </Content>
 
 <style>
@@ -343,5 +385,17 @@
   }
   .section-content {
     padding: 1.5rem;
+  }
+
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+  }
+
+  .loading-text {
+    font-size: 1.5rem;
+    color: var(--text);
   }
 </style>

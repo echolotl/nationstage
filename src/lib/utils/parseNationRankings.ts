@@ -15,7 +15,7 @@ export enum TopPercentileType {
     TOP_TEN = 10
 }
 
-const TROPHY_IMAGE_NAMES: Record<number, string> = {
+export const TROPHY_IMAGE_NAMES: Record<number, string> = {
     0: "liberal",
     1: "economy",
     2: "polifree",
@@ -85,7 +85,7 @@ const TROPHY_IMAGE_NAMES: Record<number, string> = {
     66: "endorsed",
     67: "average",
     68: "hdi",
-    69: "primative",
+    69: "primitive",
     70: "advanced",
     71: "inclusive",
     72: "income",

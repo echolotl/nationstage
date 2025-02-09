@@ -9,6 +9,8 @@
     import { isAuthenticated, currentNation } from '$lib/stores/auth';
     import { invoke } from '@tauri-apps/api/core';
 
+    let scrolled = $state(false);
+
     onMount(async () => {
         try {
             const auth = await invoke<{ nation: string } | null>('get_auth');
@@ -23,7 +25,13 @@
             isAuthenticated.set(false);
             currentNation.set('');
         }
+
+        window.addEventListener('scroll', handleScroll);
     });
+
+    function handleScroll() {
+        scrolled = window.scrollY > 0;
+    }
 
     onMount(() => {
         if ($theme) {
@@ -33,8 +41,8 @@
 </script>
   
 <div class="layout">
-    <Window />
-    <Navbar />
+    <Window {scrolled} />
+    <Navbar {scrolled} />
 </div>
 
 <style>

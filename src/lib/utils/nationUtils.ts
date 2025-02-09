@@ -69,10 +69,23 @@ export function getFreedomClass(value: string, type: 'civil' | 'economy' | 'poli
     return `freedom-${15 - index}`; // Invert index so 15 is best, 1 is worst
 }
 
-export function getOrdinalSuffix(n: number): string {
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return n.toLocaleString() + `<sup>${s[(v - 20) % 10] || s[v] || s[0]}</sup>`;
+export function getOrdinalSuffix(n: number | undefined): string {
+    if (!n) return 'N/A';
+    
+    const s = n.toLocaleString();
+    const lastDigit = n % 10;
+    const lastTwoDigits = n % 100;
+
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+        return s + 'th';
+    }
+
+    switch (lastDigit) {
+        case 1: return s + 'st';
+        case 2: return s + 'nd';
+        case 3: return s + 'rd';
+        default: return s + 'th';
+    }
 }
 
 export function formatCensusScore(score: number): string {
@@ -84,6 +97,7 @@ export function formatCensusScore(score: number): string {
         default: return score.toLocaleString();
     }
 }
+
 
 export function formatRelativeTime(unixTime: number): string {
     const now = Math.floor(Date.now() / 1000);

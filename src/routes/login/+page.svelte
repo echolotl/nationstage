@@ -191,6 +191,7 @@
         border-radius: 4px;
         font-size: 1rem;
         background-color: var(--background);
+        color: var(--text);
     }
 
     input:focus {

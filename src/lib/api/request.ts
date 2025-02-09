@@ -199,7 +199,8 @@ export async function getNotices() {
     return makeAuthenticatedRequest('', options);
 }
 
-export async function getUnreadNotices() {
+// Change getUnreadNotices to getAllUnread
+export async function getAllUnread() {
     const options: RequestOptions = {
         params: { 
             q: 'unread',
@@ -286,6 +287,16 @@ export async function getNationDetails(customNation?: string) {
         options.nation = customNation;
     }
 
+    return makeUnauthenticatedRequest('', options);
+}
+
+export async function getNationCurrency(nation: string) {
+    const options: RequestOptions = {
+        params: {
+            nation,
+            q: 'currency'
+        }
+    };
     return makeUnauthenticatedRequest('', options);
 }
 
@@ -427,3 +438,33 @@ export async function getNationData (nation?: string) {
     return makeAuthenticatedRequest('', options);
 }
 
+export async function getNationPolicies(nation?: string) {
+    const options: RequestOptions = {
+        params: {
+            q: 'policies'
+        }
+    };
+    
+    if (nation) {
+        options.nation = nation;
+    }
+    
+    return makeAuthenticatedRequest('', options);
+}
+
+
+export async function getNationAllCensus(nation?: string): Promise<string> {
+    const options: RequestOptions = {
+        params: {
+            q: 'census',
+            scale: 'all',
+            mode: 'score+rank+rrank+prank'
+        }
+    };
+    
+    if (nation) {
+        options.nation = nation;
+    }
+    
+    return makeUnauthenticatedRequest('', options);
+}

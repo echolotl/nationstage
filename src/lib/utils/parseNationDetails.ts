@@ -136,3 +136,10 @@ export function parseNationDetails(xmlString: string): NationDetails {
         census: parseCensusData()
     };
 }
+
+export function parseNationCurrency(xml: string): string {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, 'text/xml');
+    const currencyElement = xmlDoc.querySelector('CURRENCY');
+    return currencyElement?.textContent || '';
+}

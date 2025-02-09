@@ -134,7 +134,7 @@ export async function getDominantColor(imageUrl: string): Promise<string> {
                 console.log('Initial color:', baseColor); // Debug
                 
                 const background = getComputedStyle(document.documentElement)
-                    .getPropertyValue('--background')
+                    .getPropertyValue('--solid')
                     .trim();
                 console.log('Background color:', background); // Debug
 

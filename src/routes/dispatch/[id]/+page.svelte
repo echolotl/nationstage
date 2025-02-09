@@ -7,6 +7,7 @@
     import { formatRelativeTime } from "$lib/utils/nationUtils";
     import { openUrl } from "@tauri-apps/plugin-opener";
     import { invoke } from "@tauri-apps/api/core";  // Add this import
+    import { parseBBCode } from "$lib/utils/parseBBCode";
 
     let dispatch: Dispatch | null = null;
     let authorFlag: string = '';
@@ -21,9 +22,8 @@
             const xml = await getDispatch(id);
             dispatch = parseDispatch(xml);
             if (dispatch) {
-                parsedContent = await invoke('parse_bbcode', { 
-                    input: dispatch.text 
-                });
+                console.log(dispatch.text);
+                parsedContent = await parseBBCode(dispatch.text);
                 // Get author's flag
                 const flagXml = await getNationFlag(dispatch.author);
                 const parser = new DOMParser();

@@ -20,15 +20,21 @@
     --brown-darker: #836846;
     --brown-dark: #918450;
     --brown-light: #989c5b;
-    --dark-darker: #1F1F1F;
-    --dark: #272727;
-    --dark-bright: #333333;
-    --light-darker: #eef5f0;
-    --light: #f5faf6;
-    --light-bright: #ffffff;
-    --gray-light: #c9d8cd;
-    --gray-dark: #303030;
+    --dark-darker: rgba(0, 0, 0, 0.3);
+    --dark: rgba(0, 0, 0, 0.1);
+    --dark-bright: rgba(0, 0, 0, 0.05);
+    --light-darker: rgba(100, 100, 100, 0.05);
+    --light: rgba(100, 100, 100, 0.1);
+    --light-bright: rgba(100, 100, 100, 0.3);
+    --text-dark: #f5faf6;
+    --text-darker: #eef5f0;
+    --text-light: #111;
+    --text-lighter: #000;
+    --gray-light: rgba(0, 0, 0, 0.075);
+    --gray-dark: rgba(255, 255, 255, 0.075);
     --theme-accent: var(--theme-green);
+    --light-solid: #f5f5f5;
+    --dark-solid: #1a1a1a;
   }
 
 :root[data-theme="light"] {
@@ -50,11 +56,12 @@
     --background: var(--light);
     --background-secondary: var(--light-darker);
     --background-light: var(--light-bright);
-    --text: var(--dark);
-    --text-secondary: var(--dark-bright);
+    --text: var(--text-light);
+    --text-secondary: var(--text-lighter);
     --theme-accent: var(--theme-green);
     --theme-accent-hover: var(--theme-green-hover);
     --gray-mixed: var(--gray-light);
+    --solid: var(--light-solid);
 }
 
 :root[data-theme="dark"] {
@@ -76,16 +83,17 @@
     --background: var(--dark);
     --background-secondary: var(--dark-darker);
     --background-light: var(--dark-bright);
-    --text: var(--light);
-    --text-secondary: var(--light-bright);
-    --theme-accent: var(--theme-green);
-    --theme-accent-hover: var(--theme-green-hover);
+    --text: var(--text-dark);
+    --text-secondary: var(--text-darker);
+    --theme-accent: var(--green-dark);
+    --theme-accent-hover: var(--green-darker);
     --gray-mixed: var(--gray-dark);
+    --solid: var(--dark-solid);
 }
 
 html, body {
     -ms-overflow-style: none; 
-    background: var(--background);
+    background: transparent;
     color: var(--text);
     margin: 0px;
 }
@@ -179,7 +187,7 @@ a:hover {
 }
 
 .region-link {
-  color: var(--theme-yellow) !important;
+  color: var(--theme-brown) !important;
   text-decoration: none;
   font-weight: 500;
 }

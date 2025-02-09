@@ -9,11 +9,13 @@
 
     function toggleTheme() {
         $theme = $theme === 'light' ? 'dark' : 'light';
+        invoke('change_mica_theme', { dark: $theme === 'dark' }).catch(console.error);
     }
 
     let nationInput = '';
     let regionInput = '';
     let discordEnabled = false;
+    let showDropdown = false;
 
     function goToNation() {
         if (nationInput) goto(`/nation/${nationInput.toLowerCase()}`);
@@ -60,12 +62,11 @@
 </script>
 
 <Content>
-    <div class="settings">
-        <h1 class="center-text lora-text">NationStage Settings</h1>
-        <hr>
+    <div class="settings lora-text">
+        <h1 class="center-text lora-display">Settings</h1>
         
         <div class="setting-group">
-            <h2>Account</h2>
+            <h2 class="lora-display">Account</h2>
             {#if $auth.isAuthenticated}
                 <div class="setting-item">
                     <span>Current Nation</span>
@@ -73,7 +74,7 @@
                 </div>
                 <div class="setting-item">
                     <span>Region</span>
-                    <span>{$auth.region || 'No Region'}</span>
+                    <a class="region-link" href="/region/{$auth.region}">{$auth.region}</a>
                 </div>
                 <div class="setting-item">
                     <span>Account Actions</span>
@@ -85,28 +86,32 @@
                             Logout
                         </button>
                         <button 
-                            class="secondary-button"
                             on:click={() => goto('/login')}
                         >
                             Add Account
                         </button>
-                    </div>
-                </div>
-                {#if $savedAccounts.length > 1}
-                    <div class="setting-item">
-                        <span>Saved Accounts</span>
-                        <div class="accounts-list">
-                            {#each $savedAccounts.filter(acc => acc.nation !== $auth.nation) as account}
-                                <button 
-                                    class="account-button" 
-                                    on:click={() => handleAccountSwitch(account.nation)}
-                                >
-                                    Switch to {account.nation}
-                                </button>
-                            {/each}
+                        <div class="dropdown">
+                            <button 
+                                class="dropdown-button" 
+                                on:click={() => showDropdown = !showDropdown}
+                            >
+                                Switch Account
+                            </button>
+                            {#if showDropdown}
+                                <div class="dropdown-content">
+                                    {#each $savedAccounts.filter(acc => acc.nation !== $auth.nation) as account}
+                                        <button 
+                                            class="account-button" 
+                                            on:click={() => handleAccountSwitch(account.nation)}
+                                        >
+                                            {account.nation}
+                                        </button>
+                                    {/each}
+                                </div>
+                            {/if}
                         </div>
                     </div>
-                {/if}
+                </div>
             {:else}
                 <div class="setting-item">
                     <span>Not logged in</span>
@@ -116,7 +121,7 @@
         </div>
 
         <div class="setting-group">
-            <h2>Appearance</h2>
+            <h2 class="lora-display" >Appearance</h2>
             <div class="setting-item">
                 <span>Theme</span>
                 <button 
@@ -126,13 +131,13 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" fill="currentColor" viewBox="0 0 78 78">
                     {@html themeIcons[$theme as 'light' | 'dark']}
                 </svg>
-                    {$theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                    {$theme === 'light' ? 'Light' : 'Dark'}
                 </button>
             </div>
         </div>
 
         <div class="setting-group">
-            <h2>Debug Navigation</h2>
+            <h2 class="lora-display" >Debug Navigation</h2>
             <div class="setting-item">
                 <span>Go to Nation</span>
                 <div class="input-group">
@@ -158,11 +163,14 @@
         </div>
 
         <div class="setting-group">
-            <h2>Integrations</h2>
+            <h2 class="lora-display" >Integrations</h2>
             <div class="setting-item">
-                <span>Discord Rich Presence</span>
+                <span class="discord-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1.5rem" height="1.5rem" viewBox="0 0 127.14 96.36"><path fill="currentColor" d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
+                    Discord Rich Presence
+                </span>
                 <button 
-                    class="toggle-button" 
+                    class="toggle-button discord" 
                     class:enabled={discordEnabled}
                     on:click={toggleDiscordRPC}
                 >
@@ -174,9 +182,11 @@
 </Content>
 
 <style>
+    .center-text {
+        text-align: center;
+    }
     .settings {
         margin: 0 auto;
-        padding: 1rem;
     }
 
     .setting-group {
@@ -189,6 +199,7 @@
         align-items: center;
         padding: 1rem;
         background: var(--background-secondary);
+        border: 1px solid var(--gray-mixed);
         border-radius: 0.5rem;
         margin: 1rem 0;
     }
@@ -284,5 +295,48 @@
     .toggle-button.enabled {
         background: var(--theme-accent);
         color: white;
+    }
+    .toggle-button.enabled.discord {
+        background: #5865F2;
+        color: white;
+    }
+
+    .discord-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .discord-label svg {
+        color: var(--text);
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: block;
+        position: absolute;
+        background-color: var(--background-secondary);
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+    .dropdown-content .account-button {
+        color: var(--text);
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+    .dropdown-content .account-button:hover {
+        background-color: var(--background-light);
+    }
+
+    .dropdown-button {
+        background: var(--background) !important;
     }
 </style>

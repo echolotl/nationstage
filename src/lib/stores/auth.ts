@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
+import { refreshNotifications } from './notifications'; // Import loadNotifications
 
 interface AuthStore {
     isAuthenticated: boolean;
@@ -131,7 +132,10 @@ export async function handleLogin(nation: string, password: string, rememberMe: 
                 autologin,
                 region: regionName
             });
-            const accounts = get(savedAccounts);
+            let accounts = get(savedAccounts);
+            if (!Array.isArray(accounts)) {
+                accounts = [];
+            }
             const updatedAccounts = accounts.filter(acc => acc.nation !== nation);
             updatedAccounts.push({
                 nation,
@@ -141,15 +145,15 @@ export async function handleLogin(nation: string, password: string, rememberMe: 
             savedAccounts.set(updatedAccounts);
         }
 
+        // Update current auth state without replacing existing accounts
         auth.set({
             isAuthenticated: true,
             nation,
             region: regionName
         });
-        
         currentNation.set(nation);
         isAuthenticated.set(true);
-        
+
         return true;
     } catch (error) {
         console.error('Login failed:', error);
@@ -172,6 +176,7 @@ export async function switchAccount(nation: string): Promise<boolean> {
                 region: account.region
             });
             currentNation.set(account.nation);
+            await refreshNotifications(); // Update notifications store
             return true;
         }
     }
@@ -187,3 +192,16 @@ export async function logout(): Promise<void> {
 
 // Initialize auth on import
 initAuth();
+
+// Load saved accounts on app start
+export async function loadSavedAccounts(): Promise<void> {
+    try {
+        const accounts = await invoke<SavedAccount[]>('get_saved_accounts');
+        savedAccounts.set(accounts);
+    } catch (error) {
+        console.error('Failed to load saved accounts:', error);
+    }
+}
+
+// Load saved accounts on import
+loadSavedAccounts();

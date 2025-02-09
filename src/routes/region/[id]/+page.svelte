@@ -7,6 +7,7 @@
     import { invoke } from '@tauri-apps/api/core';
     import { auth } from '$lib/stores/auth';
     import { bookmarks } from '$lib/stores/bookmarks';
+    import { parseBBCode } from '$lib/utils/parseBBCode.js';
     
     export let data;
     console.log('Page data:', data); // Debug
@@ -41,13 +42,38 @@
         }
     }
 
+    // Replace the existing formatFlagUrl function
     function formatFlagUrl(url: string): string {
-        if (url.includes('.svg')) {
-            return url.replace('.svg', 't1.png');
-        } else if (url.includes('.png')) {
-            return url.replace('.png', 't1.png');
+        if (!url) return '';
+
+        // Handle URLs that already have sizing parameters
+        if (url.includes('t1.') || url.includes('t2.') || url.includes('t3.')) {
+            return url;
         }
-        return url;
+
+        // Check if the URL is for an SVG
+        if (url.toLowerCase().endsWith('.svg')) {
+            return url;
+        }
+
+        // Try to extract the base URL and add sizing parameter
+        try {
+            const urlObj = new URL(url);
+            const pathParts = urlObj.pathname.split('.');
+            const extension = pathParts.pop(); // Remove the extension
+            const basePath = pathParts.join('.');
+            
+            // Reconstruct the URL with t1 sizing
+            return `${urlObj.origin}${basePath}t1.${extension}`;
+        } catch (e) {
+            // If URL parsing fails, try a simple string replacement
+            const match = url.match(/(.*?)\.(png|jpg|jpeg|gif|webp)$/i);
+            if (match) {
+                return `${match[1]}t1.${match[2]}`;
+            }
+            // If all else fails, return the original URL
+            return url;
+        }
     }
 
     let flagsLoaded = false;
@@ -133,6 +159,7 @@
 </script>
 
 {#if !regionData}
+<div class="loading lora-text">Loading region data...</div>
 {:else}
 <div class="region-banner-container">
     {#if !regionData.flag}
@@ -185,7 +212,7 @@
                 <legend class="subtitle">World Factbook Entry</legend>
                 <hr />
                     <div class="worldfactbook">      
-                        {#await invoke('parse_bbcode', { input: regionData.factbook })}
+                        {#await parseBBCode(regionData.factbook)}
                             <p>Loading...</p>
                         {:then parsed}
                             <p class="lora-text">{@html parsed}</p>
@@ -304,7 +331,9 @@
     .region-flag img {
         height: 10rem;
         width: auto;
+        max-width: 16rem; /* Add max-width to prevent extremely wide flags */
         margin-right: 2rem;
+        object-fit: contain; /* Preserve aspect ratio */
     }
     .banner {
         position: absolute;
@@ -316,13 +345,7 @@
         position: relative;
         width: 100%;
         height: 30vh;
-    }
-    .region-banner::after {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(in oklab 180deg, rgba(0, 0, 0, 0), var(--background));
+        mask-image: linear-gradient(to top, transparent, black);
     }
     .region-banner-container {
         z-index: 1;
@@ -368,9 +391,9 @@
     }
 
     .officer-flag {
-        width: auto;
-        height: 100%;
-        object-fit: cover;
+        width: 40px; /* Set a fixed width */
+        height: 24px; /* Set a fixed height */
+        object-fit: contain; /* Ensure image covers the area */
     }
 
     .officer-name {

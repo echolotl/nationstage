@@ -1,6 +1,7 @@
 import type { IssueResult } from '$lib/types/issues';
 import { CENSUS_NAMES } from './parseNationRankings';
 
+
 export function parseIssueResults(xmlString: string): IssueResult {
     console.log('Raw XML response:', xmlString); // Debug: Log raw XML
     
@@ -25,6 +26,7 @@ export function parseIssueResults(xmlString: string): IssueResult {
                 const id = parseInt(rank.getAttribute('id') || '0');
                 const pchange = parseFloat(rank.querySelector('PCHANGE')?.textContent || '0');
                 return {
+                    id,
                     name: CENSUS_NAMES[id] || `Census ${id}`,
                     change: pchange
                 };
@@ -51,12 +53,22 @@ export function parseIssueResults(xmlString: string): IssueResult {
 
     const newPolicies = xmlDoc.querySelector('NEW_POLICIES');
     if (newPolicies) {
-        result.newPolicies = Array.from(newPolicies.children).map(p => r.textContent || '');
+        result.newPolicies = Array.from(newPolicies.children).map(policy => ({
+            name: policy.querySelector('NAME')?.textContent || '',
+            pictureId: policy.querySelector('PIC')?.textContent || '',
+            category: policy.querySelector('CAT')?.textContent || '',
+            description: policy.querySelector('DESC')?.textContent || ''
+        }));
     }
 
     const removedPolicies = xmlDoc.querySelector('REMOVED_POLICIES');
     if (removedPolicies) {
-        result.removedPolicies = Array.from(removedPolicies.children).map(p => r.textContent || '');
+        result.removedPolicies = Array.from(removedPolicies.children).map(policy => ({
+            name: policy.querySelector('NAME')?.textContent || '',
+            pictureId: policy.querySelector('PIC')?.textContent || '',
+            category: policy.querySelector('CAT')?.textContent || '',
+            description: policy.querySelector('DESC')?.textContent || ''
+        }));
     }
 
     return result;

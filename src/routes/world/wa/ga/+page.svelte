@@ -6,6 +6,7 @@
     import Content from '$lib/components/content.svelte';
     import { invoke } from '@tauri-apps/api/core';
     import { auth } from '$lib/stores/auth';
+    import { parseBBCode } from '$lib/utils/parseBBCode';
 
     let mounted = false;
 
@@ -53,18 +54,13 @@
         try {
             const waResponse = await getWAInfo(1);
             const waData = parser.parse(waResponse);
+            console.log(waData);
             const waAssembly = waData.WA;
 
             if (waAssembly.RESOLUTION) {
                 const description = waAssembly.RESOLUTION.DESC || '';
-                console.log('Raw BBCode input:', description);
-                console.log('Input contains BBCode tags:', description.includes('['));
 
-                const parsedDescription = await invoke<string>('parse_bbcode', { 
-                    input: description 
-                });
-                console.log('Parsed HTML output:', parsedDescription);
-                console.log('Output contains HTML tags:', parsedDescription.includes('<'));
+                const parsedDescription = await parseBBCode(description);
                 
                 currentResolution = {
                     id: waAssembly.RESOLUTION.ID,
@@ -203,22 +199,9 @@
         {/if}
 
         {#if currentResolution}
-            <h2>Current Resolution</h2>
-            <pre class="resolution-data">
-Name: {currentResolution.name}
-Category: {currentResolution.category}
-Industry: {currentResolution.industry}
-Proposed by: {currentResolution.proposedBy}
+        <h2 class="lora-display">{currentResolution.name}</h2>
 
-Votes:
-Nations For: {currentResolution.totalNations.for}
-Nations Against: {currentResolution.totalNations.against}
-Total Votes For: {currentResolution.totalVotes.for}
-Total Votes Against: {currentResolution.totalVotes.against}
-
-Description:
-{@html currentResolution.description}
-            </pre>
+            <div class="current-resolution lora-text">{@html currentResolution.description}</div>
         {/if}
     {/if}
 </div>

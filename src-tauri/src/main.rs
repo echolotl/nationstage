@@ -3,6 +3,7 @@
 
 mod discord;
 mod nscode;
+mod scraper;
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use reqwest::Client;
@@ -16,6 +17,7 @@ use tauri::State;
 use crate::discord::{DiscordState, initialize_discord, update_discord_presence, toggle_discord_rpc, get_discord_setting};
 use crate::nscode::BBCodeParser;
 use std::sync::Arc;
+use window_vibrancy::*;
 
 struct AuthState(Mutex<Option<AuthStateData>>);
 
@@ -162,7 +164,14 @@ fn clear_saved_credentials() {
 
 #[tauri::command]
 fn get_user_agent() -> String {
-    format!("NationStage/0.3.0 (by Taelboa)")
+    format!("NationStage/0.3.6 (by Taelboa)")
+}
+
+#[tauri::command]
+async fn fetch_page(url: String) -> Result<scraper::ScraperResponse, String> {
+    scraper::fetch_html(&url, &get_user_agent())
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -170,7 +179,7 @@ async fn fetch_image(url: String) -> Result<String, String> {
     let client = Client::new();
     let response = client
         .get(url)
-        .header("User-Agent", "NationStage")
+        .header("User-Agent", get_user_agent())
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -199,7 +208,51 @@ async fn save_auth(
     };
     *state.0.lock().unwrap() = Some(auth_data);
     save_credentials(&credentials)?;
+
+    // Load existing accounts
+    let mut accounts = load_saved_accounts().unwrap_or(SavedAccounts { accounts: vec![] });
+
+    // Add or update the account
+    accounts.accounts.retain(|acc| acc.nation != credentials.nation);
+    accounts.accounts.push(credentials);
+
+    // Save the updated accounts
+    save_accounts(&accounts)?;
+
     Ok(())
+}
+
+fn load_saved_accounts() -> Option<SavedAccounts> {
+    let path = get_credentials_path();
+    let mut accounts_path = path.clone();
+    accounts_path.set_file_name("accounts.json");
+    println!("Looking for accounts at: {:?}", accounts_path); // Debug
+
+    if accounts_path.exists() {
+        println!("Accounts file exists"); // Debug
+        match fs::read_to_string(&accounts_path) {
+            Ok(contents) => {
+                println!("Read contents: {}", contents); // Debug
+                match serde_json::from_str(&contents) {
+                    Ok(accounts) => {
+                        println!("Successfully parsed accounts"); // Debug
+                        Some(accounts)
+                    }
+                    Err(e) => {
+                        println!("Failed to parse accounts: {}", e); // Debug
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                println!("Failed to read accounts file: {}", e); // Debug
+                None
+            }
+        }
+    } else {
+        println!("No accounts file found"); // Debug
+        None
+    }
 }
 
 #[tauri::command]
@@ -377,13 +430,25 @@ fn add_custom_tag(name: String, template: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn change_mica_theme(window: tauri::Window, dark: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        apply_mica(&window, Some(dark)).map_err(|e| e.to_string())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Unsupported platform! 'apply_mica' is only supported on Windows".into())
+    }
+}
+
 fn main() {
     let discord = initialize_discord();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Initialize auth state from saved credentials on startup
+            let window = app.get_webview_window("main").unwrap();
             let state: State<AuthState> = app.state();
             if let Some(credentials) = load_saved_credentials() {
                 *state.0.lock().unwrap() = Some(AuthStateData {
@@ -391,6 +456,13 @@ fn main() {
                     pin: String::new(),
                 });
             }
+            #[cfg(target_os = "macos")]
+            apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
+                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
+
+            #[cfg(target_os = "windows")]
+            apply_mica(&window, Some(true))
+                .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
             Ok(())
         })
         .manage(DiscordState(Arc::new(Mutex::new(discord))))
@@ -415,6 +487,8 @@ fn main() {
             get_user_data,
             parse_bbcode,
             add_custom_tag,
+            fetch_page,
+            change_mica_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -6,25 +6,40 @@
              getCategoryDescription, getFreedomClass, formatList, formatRelativeTime, 
              parseHappening } from '$lib/utils/nationUtils.js';
     import type { NationRanking } from '$lib/types/rankings';
+    import { censusScales } from '$lib/utils/censusData.js';
     
     export let data;
+    let currentCensusId: number;
     
     $: nationData = data?.nation;
     $: currentCensus = nationData?.census[0];
 
     $: censusRank = currentCensus ? getOrdinalSuffix(currentCensus.rank) : '';
     $: censusRegionalRank = currentCensus ? getOrdinalSuffix(currentCensus.relativeRank) : '';
-    $: censusScore = currentCensus ? formatCensusScore(currentCensus.score) : '';
+    $: censusScore = currentCensus ? currentCensus.score : '';
+    $: censusDescriptor = currentCensusId ? censusScales[currentCensusId].descriptor || '' : '';
 
-    let censusScales: { [key: number]: any } = {};
     
     onMount(async () => {
-        const censusXML = await getWorldCensusInfo();
-        censusScales = parseWorldCensusInfo(censusXML);
-    });
+    const censusXML = await getWorldCensusInfo();
+    if (censusXML) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(censusXML, "text/xml");
+        const censusElement = xmlDoc.querySelector("CENSUS");
+        if (censusElement) {
+            const idStr = censusElement.getAttribute("id");
+            // Convert the ID to a number, default to 0 if not found
+            currentCensusId = idStr ? parseInt(idStr, 10) : 0;
+        }
+    }
+});
 
-    $: censusUnits = currentCensus && censusScales[currentCensus.id] 
-        ? censusScales[currentCensus.id].unit 
+    $: censusUnits = currentCensus && censusScales[currentCensusId] 
+        ? censusScales[currentCensusId].unit 
+        : '';
+
+    $: censusPrefix = currentCensus && censusScales[currentCensusId]
+        ? censusScales[currentCensusId].prefix || ''
         : '';
 
     function filterUniqueRankings(rankings: NationRanking[], existingRankings: NationRanking[][]): NationRanking[] {
@@ -87,7 +102,7 @@
                 <p>
                     {nationData.name} is ranked {@html censusRank} in the world 
                     and {@html censusRegionalRank} in <a href="/region/{nationData.region}" class="region-link">{nationData.region}</a>
-                    with {censusScore} {censusUnits}.
+                    for {censusDescriptor} with {censusScore} {censusPrefix} {censusUnits}.
                 </p>
             {/if}
         </div>

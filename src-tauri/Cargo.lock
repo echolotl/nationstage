@@ -2224,7 +2224,7 @@ dependencies = [
 
 [[package]]
 name = "nationstage"
-version = "0.1.0"
+version = "0.3.6"
 dependencies = [
  "base64 0.21.7",
  "discord-rich-presence",
@@ -2239,6 +2239,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-opener",
  "tokio",
+ "window-vibrancy",
 ]
 
 [[package]]

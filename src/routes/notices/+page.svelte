@@ -7,6 +7,7 @@
     import { noticeIcons } from '$lib/utils/noticeIcons';
     import { invoke } from '@tauri-apps/api/core';
     import { auth } from '$lib/stores/auth';
+    import { refreshNotifications } from '$lib/stores/notifications';
     
     let notices: Notice[] = [];
     let loading = true;
@@ -31,7 +32,10 @@
             details: `Playing as ${$auth.nation}`,
             state: `Reading notices`
         });
-        loadNotices();
+        await Promise.all([
+            loadNotices(),
+            refreshNotifications() // Refresh notification counts
+        ]);
     });
 </script>
 

@@ -6,9 +6,6 @@
     import { invoke } from '@tauri-apps/api/core';
     import { auth } from '$lib/stores/auth';
     import { bookmarks } from '$lib/stores/bookmarks';
-    import { getWorldCensusInfo } from '$lib/api/request';
-    import { parseWorldCensusInfo } from '$lib/utils/parseWorldCensusInfo';
-    import { getOrdinalSuffix, formatCensusScore, formatHappeningText, getSizeAdjective, getCategoryDescription, getFreedomClass, formatList, formatName, formatRelativeTime, parseHappening } from '$lib/utils/nationUtils.js';
 
     let { children, data } = $props();
     
@@ -17,6 +14,8 @@
     const currentPath = $derived($page.url.pathname.split('/').pop());
 
     let isBookmarked = $state(false);
+    let loggedInNation = $auth.nation;
+    let isCurrentNation = $derived(loggedInNation === nationData?.name);
     
     $effect(() => {
         if (nationData) {
@@ -97,6 +96,13 @@
                 alt={nationData.name} 
             />
         {/each}
+        {#if isCurrentNation}
+        <a href="/banners">
+            <button class="edit-nation lora-text">
+                Edit Banner
+            </button>
+        </a>
+    {/if}
         <button 
             class="bookmark-button {isBookmarked ? 'active' : ''}" 
             onclick={toggleBookmark}
@@ -130,7 +136,7 @@
             {#each data?.rankings?.all?.slice(0, 5) ?? [] as ranking}
                 <div class="trophy top">
                     <img 
-                        src="https://www.nationstates.net/images/trophies/{ranking.imageName}{ranking.trophyIcon}.png" 
+                        src="https://www.nationstates.net/images/trophies/{ranking.imageName}{ranking.trophyIcon ? ranking.trophyIcon : '-100'}.png" 
                         alt="{ranking.name} trophy"
                         title="{ranking.name}: Ranked #{ranking.rank} (Top {(100 - ranking.percentile).toFixed(2)}%)"
                     />
@@ -189,13 +195,6 @@
         overflow: hidden;
     }
 
-    .nation-banner::after {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(in oklab 180deg, rgba(0, 0, 0, 0), var(--background));
-    }
 
     .banner {
         position: absolute;
@@ -204,6 +203,7 @@
         object-fit: cover;
         opacity: 0;
         transition: opacity 1s ease-in-out;
+        mask-image: linear-gradient(to top, transparent, black);
     }
 
     .banner.active {
@@ -323,6 +323,22 @@
         color: var(--text);
         cursor: pointer;
         transition: transform 0.2s;
+    }
+    .edit-nation {
+        position: absolute;
+        bottom: 1.14rem;
+        right: 5.5rem;
+        z-index: 5;
+        background: transparent;
+        padding: .3rem .5rem;
+        border: none;
+        color: var(--text);
+        cursor: pointer;
+        border-radius: 10px;
+        transition: background-color 0.2s;
+    }
+    .edit-nation:hover {
+        background: var(--theme-accent);
     }
 
     .bookmark-button.active {

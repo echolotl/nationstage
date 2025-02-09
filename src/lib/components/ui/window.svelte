@@ -1,8 +1,7 @@
 <script lang="ts">
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
-  // when using `"withGlobalTauri": true`, you may use
-  // const { getCurrentWindow } = window.__TAURI__.window;
+  export let scrolled: boolean;
 
   const appWindow = getCurrentWindow();
 
@@ -21,7 +20,7 @@
   document.addEventListener("contextmenu", (event) => event.preventDefault());
 </script>
 
-<div data-tauri-drag-region class="titlebar">
+<div data-tauri-drag-region class="titlebar {scrolled ? 'scrolled' : ''}">
   <div class="small-logo-icon">
     <div class="titlebar-logo">
       <svg
@@ -139,6 +138,9 @@
     left: 0;
     right: 0;
     z-index: 999;
+  }
+  .titlebar.scrolled {
+    background: var(--solid);
   }
   .titlebar-spacer {
     top: 0;

@@ -5,6 +5,10 @@
   import { notices } from '$lib/stores/notices';
   import { goto } from '$app/navigation';
   import { navigating } from '$app/stores';
+  import { notifications, initializeNotificationPolling } from '$lib/stores/notifications';
+  import { onMount } from 'svelte';
+
+  export let scrolled: boolean;
 
   interface AuthData {
     nation: string;
@@ -12,6 +16,12 @@
     autologin: string;
     region: string | null;
   }
+
+  onMount(() => {
+        console.log('Initializing notification polling...');
+        const cleanup = initializeNotificationPolling();
+        return cleanup;
+    });
 
   // Active route tracking
 
@@ -69,8 +79,6 @@
     }
   }
 
-  $: hasUnreadNotices = $notices.some(notice => notice.unread);
-
   const baseNavItems: NavItem[] = [
     {
       label: "Home",
@@ -89,7 +97,6 @@
     {
       label: "Notices",
       path: "/notices",
-      highlight: $notices.some(notice => notice.unread),
       icon: {
         viewBox: "0 0 24 24",
         elements: [{
@@ -114,7 +121,7 @@
               "d=M47.6,30.04c-1.7-1.55-8.73-.25-9.84-.03H12.92s-8.16-1.69-10,0c-5.64,5.17-2.63,35.64,5,36.2,3.95.29,4.84-21.1,4.84-21.1v15.2s1.47,29.92,5.48,30.1c4.17.19,7.09-30.1,7.09-30.1,0,0,2.92,30.3,7.09,30.1,4-.2,5.34-30.1,5.34-30.1v-15.16s.89,21.39,4.84,21.1c7.63-.56,10.65-31.03,5-36.2Z",
           },
         ],
-      },
+      }
     },
     {
       label: "Telegrams",
@@ -241,7 +248,7 @@
   }
 </script>
 
-<nav class="nav-container" class:loading={$navigating}>
+<nav class="nav-container {scrolled ? 'scrolled' : ''}" class:loading={$navigating}>
   <div class="nav-controls">
     <button class="nav-control-btn" on:click={goBack}>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1rem" height="1rem">
@@ -266,6 +273,7 @@
           <div class="dropdown">
             <button
               class="dropdown-trigger"
+              class:notification-dot={item.highlight}
               class:active={currentPath.startsWith(item.path)}
             >
               {#if item.icon}
@@ -283,29 +291,35 @@
                 </div>
               {/if}
               <span>{item.label}</span>
+              {#if item.label === "Notices" && $notifications.unreadNotices > 0}
+                <span class="highlight">{$notifications.unreadNotices}</span>
+                
+              {:else if item.label === "Issues" && $notifications.unreadIssues > 0}
+                <span class="highlight">{$notifications.unreadIssues}</span>
+              {/if}
             </button>
             <ul class="dropdown-content">
-              {#each item.subItems as subItem}
+              {#each item.subItems as subItems}
                 <li class="">
                   <a
-                    href={subItem.path}
-                    class:active={currentPath === subItem.path}
+                    href={subItems.path}
+                    class:active={currentPath === subItems.path}
                   >
-                    {#if subItem.icon}
+                    {#if subItems.icon}
                       <div class="tab-icon">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           width="1rem"
                           height="1rem"
-                          viewBox={subItem.icon.viewBox}
+                          viewBox={subItems.icon.viewBox}
                         >
-                          {#each subItem.icon.elements as element}
+                          {#each subItems.icon.elements as element}
                             {@html renderSvgElement(element)}
                           {/each}
                         </svg>
                       </div>
                     {/if}
-                    <span>{subItem.label}</span>
+                    <span>{subItems.label}</span>
                   </a>
                 </li>
               {/each}
@@ -329,6 +343,11 @@
                 </div>
               {/if}
               <span>{item.label}</span>
+              {#if item.label === "Notices" && $notifications.unreadNotices > 0}
+                <span class="highlight">{$notifications.unreadNotices}</span>
+              {:else if item.label === "Issues" && $notifications.unreadIssues > 0}
+                <span class="highlight">{$notifications.unreadIssues}</span>
+              {/if}
             </a>
           </div>
         {/if}
@@ -342,7 +361,7 @@
   .nav-container {
     padding-top: 0.5rem;
     padding-left: 0.5rem;
-    background: var(--background-secondary, #2c3e50);
+    background: var(--background-secondary);
     width: 100%;
     position: fixed;
     top: 20px;
@@ -351,6 +370,9 @@
     border-bottom: 2px solid var(--theme-accent);
     display: flex;
     align-items: center;
+  }
+  .nav-container.scrolled {
+    background: var(--solid);
   }
   .tab-icon {
     display: flex;
@@ -429,7 +451,7 @@
     top: 100%;
     left: 0;
     min-width: 200px;
-    background: var(--background-secondary, #2c3e50);
+    background: var(--solid);
     padding: 0 0;
     list-style: none;
     border-bottom-right-radius: 6px;
@@ -460,18 +482,18 @@
   }
 
   .highlight {
-    position: relative;
-  }
-  
-  .highlight::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 8px;
-    height: 8px;
     background: var(--theme-red);
-    border-radius: 50%;
+    color: white;
+    border-radius: 50%; /* Changed from 10px to 50% for perfect circle */
+    padding: 0.125rem; /* Changed from 0.1rem 0.5rem to equal padding */
+    font-size: 0.8rem;
+    margin-left: 0.25rem;
+    min-width: 1rem; /* Added to maintain circular shape */
+    height: 1rem; /* Added to maintain circular shape */
+    display: inline-flex; /* Added for centering content */
+    align-items: center; /* Added for centering content */
+    justify-content: center; /* Added for centering content */
+    line-height: 1; /* Added to prevent vertical stretching */
   }
 
   .nav-controls {
