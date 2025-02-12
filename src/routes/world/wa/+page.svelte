@@ -124,11 +124,12 @@
                 </svg>
                 <h2>General Assembly</h2>
             </span>
+            {#if (gaData.id !== "")}
             <div class="resolution-container">
-            <h3 class="resolution-title">{gaData.name}</h3>
-            <div class="resolution-desc"></div>
+            <h3 class="resolution-title"><a href="wa/ga">{gaData.name}</a></h3>
+            <div class="resolution-desc">{gaData.smallDescription}</div>
             <div class="voting-bar-container">
-                <div class="voting-bar-text">For</div>
+                <div class="voting-bar-text voting-bar-subtitle">For</div>
                 <div class="voting-bar">
                     <div class="voting-bar-for" style="width: {gaForPercentage}%">
                         <span class="vote-count">{gaData.totalVotes.for}</span>
@@ -137,9 +138,22 @@
                         <span class="vote-count">{gaData.totalVotes.against}</span>
                     </div>
                 </div>
-                <div class="voting-bar-text">Against</div>
+                <div class="voting-bar-text voting-bar-subtitle">Against</div>
             </div>
         </div>
+        <div class="resolution-info">
+            <table>
+                <tbody class="resolution-info-table">
+                <tr>
+                    <td><b>Recent:</b></td>
+                    <td>{@html gaData.lastResolution}</td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+        {:else}
+        <div class="resolution-desc">No resolution at vote.</div>
+        {/if}
         </div>
 
         <div class="section lora-text">
@@ -149,6 +163,35 @@
                 </svg>
                 <h2>Security Council</h2>
             </span>
+            {#if (scData.id !== "")}
+            <div class="resolution-container">
+                <h3 class="resolution-title">{scData.name}</h3>
+                <div class="resolution-desc">{scData.smallDescription}</div>
+                <div class="voting-bar-container">
+                    <div class="voting-bar-text voting-bar-subtitle">For</div>
+                    <div class="voting-bar">
+                        <div class="voting-bar-for" style="width: {scForPercentage}%">
+                            <span class="vote-count">{scData.totalVotes.for}</span>
+                        </div>
+                        <div class="voting-bar-against" style="width: {scAgainstPercentage}%">
+                            <span class="vote-count">{scData.totalVotes.against}</span>
+                        </div>
+                    </div>
+                    <div class="voting-bar-text voting-bar-subtitle">Against</div>
+                </div>
+            </div>
+
+            {:else}
+            <div class="resolution-desc">No resolution at vote.</div>
+            {/if}
+            <table>
+                <tbody class="resolution-info-table">
+                <tr>
+                    <td><b>Recent:</b></td>
+                    <td>{@html scData.lastResolution}</td>
+                </tr>
+            </tbody>
+            </table>
 
         </div>
     </div>
@@ -174,6 +217,22 @@
         border: 1px solid var(--gray-mixed);
         border-radius: 4px;
         padding: .5rem;
+    }
+    .resolution-info {
+        padding: 1rem;
+    }
+    .resolution-info-table {
+        font-size: 1rem;
+        color: var(--text);
+    }
+    .resolution-info-table td {
+        padding: .5rem;
+    }
+    .resolution-desc {
+        font-size: 1rem;
+        color: var(--text);
+        text-align: center;
+        margin-bottom: 1rem;
     }
 
     .banner {
@@ -252,6 +311,15 @@
         font-size: .75rem;
         color: var(--text);
         letter-spacing: 2px;
+    }
+    .voting-bar-subtitle {
+        text-transform: uppercase;
+        font-size: .75rem;
+        color: var(--text);
+        letter-spacing: 2px;
+    }
+    .voting-bar-container {
+        margin-bottom: 1rem;
     }
 
     .heading {

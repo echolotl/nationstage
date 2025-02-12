@@ -242,17 +242,9 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        mask-image: linear-gradient(to top, transparent, black);
     }
 
-    .banner::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(in oklab 180deg, rgba(0, 0, 0, 0), var(--background));
-    }
 
     .banner-content {
         width: 100%;

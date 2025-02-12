@@ -138,6 +138,7 @@
     left: 0;
     right: 0;
     z-index: 999;
+    transition: background-color 0.2s;
   }
   .titlebar.scrolled {
     background: var(--solid);

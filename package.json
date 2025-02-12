@@ -1,7 +1,7 @@
 {
   "name": "nationstage",
-  "version": "0.3.5",
-  "description": "",
+  "version": "0.3.6",
+  "description": "A Windows desktop client for NationStates built with SvelteKit and Tauri.",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

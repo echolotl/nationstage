@@ -236,10 +236,7 @@
         vertical-align: top;
         position: relative;
         z-index: 4;
-        filter: drop-shadow( 6px  0px 0px var(--background)) 
-        drop-shadow(-6px  0px 0px var(--background))
-        drop-shadow( 0px  6px 0px var(--background)) 
-        drop-shadow( 0px -6px 0px var(--background));
+        filter: drop-shadow(0 0 10px var(--background-secondary));
     }
 
     .flag img {

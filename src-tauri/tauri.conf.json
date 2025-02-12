@@ -62,7 +62,7 @@
         "bannerPath": "../static/installertopbanner.bmp",
         "dialogImagePath": "../static/installerbanner.bmp",
         "upgradeCode": "{8223280e-b52a-4beb-b277-f34a5143a274}",
-        "version": "0.3.6.1",
+        "version": "0.3.6.2",
         "fragmentPaths": [
           "../static/icon.wxs"
         ]

@@ -176,15 +176,6 @@
         overflow: hidden;
         position: relative;
     }
-    .banner-container::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(0deg, var(--background-secondary), rgba(0,0,0,0));
-    }
 
     .bookmark-banner {
         width: 100%;
@@ -192,6 +183,7 @@
         object-fit: cover;
         opacity: 0;
         animation: fadeIn 0.5s ease-in-out forwards;
+        mask-image: linear-gradient(to top, transparent, black);
     }
 
     .bookmark-content {

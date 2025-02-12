@@ -1,11 +1,16 @@
 import type { WAResolution } from "$lib/types/wa";
 
+const CATEGORY_DESC_MAP: Record<string, string> = {
+    Repeal: 'A resolution to repeal previously passed legislation.',
+};
+
 export function parseWAData(xmlString: string): WAResolution {
     console.log('Parsing WA resolution XML:', xmlString.substring(0, 200) + '...');
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
     const resolutionElement = xmlDoc.querySelector('RESOLUTION');
+    const lastResolutionElement = xmlDoc.querySelector('LASTRESOLUTION');
     if (!resolutionElement) {
         throw new Error('No RESOLUTION element found in XML');
     }
@@ -15,6 +20,8 @@ export function parseWAData(xmlString: string): WAResolution {
         name: resolutionElement.querySelector('NAME')?.textContent || '',
         description: resolutionElement.querySelector('DESC')?.textContent || '',
         category: resolutionElement.querySelector('CATEGORY')?.textContent || '',
+        smallDescription: CATEGORY_DESC_MAP[resolutionElement.querySelector('CATEGORY')?.textContent || ''] || 'Something',
+        lastResolution: lastResolutionElement?.textContent || '',
         industry: resolutionElement.querySelector('OPTION')?.textContent || '',
         proposedBy: resolutionElement.querySelector('PROPOSED_BY')?.textContent || '',
         created: parseInt(resolutionElement.querySelector('CREATED')?.textContent || '0'),

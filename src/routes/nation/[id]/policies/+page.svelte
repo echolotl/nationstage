@@ -73,16 +73,7 @@
         width: auto;
         height: 100%;
         border-radius: 4px 0 0 4px;
-    }
-    .policy-image-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 384px;
-        height: 100%;
-        background: linear-gradient(270deg, var(--background-secondary) 0%, rgba(0,0,0,0) 50%);
-        border-radius: 4px 0 0 4px;
-        z-index: 3;
+        mask-image: linear-gradient(to left, transparent, black);
     }
 
     .category-title {

@@ -7,6 +7,7 @@ interface WAResolution {
     name: string;
     description: string;
     category: string;
+    smallDescription: string;
     industry: string;
     proposedBy: string;
     created: number;
@@ -23,6 +24,10 @@ interface WAResolution {
         for: number[];
         against: number[];
     };
+}
+
+const CATEGORY_DESC_MAP: Record<string, string> = {
+    repeal: 'A resolution to repeal previously passed legislation.',
 }
 
 const parser = new XMLParser({
@@ -53,6 +58,7 @@ export async function loadWAData(assemblyId: 1 | 2) {
                 name: waAssembly.RESOLUTION.NAME,
                 description: parsedDescription,
                 category: waAssembly.RESOLUTION.CATEGORY,
+                smallDescription: CATEGORY_DESC_MAP[waAssembly.RESOLUTION.CATEGORY] || 'Something',
                 industry: waAssembly.RESOLUTION.OPTION,
                 proposedBy: waAssembly.RESOLUTION.PROPOSED_BY,
                 created: parseInt(waAssembly.RESOLUTION.CREATED),

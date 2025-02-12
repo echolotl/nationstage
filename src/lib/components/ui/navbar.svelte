@@ -370,6 +370,7 @@
     border-bottom: 2px solid var(--theme-accent);
     display: flex;
     align-items: center;
+    transition: background-color 0.2s;
   }
   .nav-container.scrolled {
     background: var(--solid);
@@ -428,6 +429,7 @@
   .active {
     background: var(--theme-accent);
     font-weight: bold;
+    color: var(--light-solid);
   }
   .active:hover {
     background-color: var(--theme-accent-hover);

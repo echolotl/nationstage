@@ -2,6 +2,8 @@ export interface WAResolution {
     id: string;
     name: string;
     description: string;
+    smallDescription: string;
+    lastResolution: string;
     category: string;
     industry: string;
     proposedBy: string;
