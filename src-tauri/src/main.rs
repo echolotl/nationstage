@@ -18,6 +18,11 @@ use crate::discord::{DiscordState, initialize_discord, update_discord_presence, 
 use crate::nscode::BBCodeParser;
 use std::sync::Arc;
 use window_vibrancy::*;
+use futures_util::StreamExt;
+use std::io::Write;
+use flate2::read::GzDecoder;
+use tauri::Emitter;
+use tauri::AppHandle;
 
 struct AuthState(Mutex<Option<AuthStateData>>);
 
@@ -90,6 +95,25 @@ fn get_bookmarks_path() -> PathBuf {
 fn get_data_path() -> PathBuf {
     let mut path = get_credentials_path();
     path.set_file_name("data.json");
+    path
+}
+
+fn get_dumps_path() -> PathBuf {
+    let mut path = if cfg!(windows) {
+        match env::var("APPDATA") {
+            Ok(dir) => PathBuf::from(dir),
+            Err(_) => env::current_dir().unwrap_or_default(),
+        }
+    } else {
+        match env::var("HOME") {
+            Ok(dir) => PathBuf::from(dir).join(".config"),
+            Err(_) => env::current_dir().unwrap_or_default(),
+        }
+    };
+
+    path.push("com.echolotl.lol");
+    path.push("nationstage");
+    path.push("dumps");
     path
 }
 
@@ -378,7 +402,7 @@ async fn remove_bookmark(id: String) -> Result<(), String> {
 #[tauri::command]
 async fn get_bookmarks() -> Result<Bookmarks, String> {
     let path = get_bookmarks_path();
-    if !path.exists() {
+    if (!path.exists()) {
         return Ok(Bookmarks { items: vec![] });
     }
 
@@ -442,13 +466,148 @@ fn change_mica_theme(window: tauri::Window, dark: bool) -> Result<(), String> {
     }
 }
 
+#[derive(Clone, serde::Serialize)]
+struct DownloadProgress {
+    message: String,
+    progress: f64,
+    is_extracting: bool,
+}
+
+async fn download_dump(client: &Client, url: &str, filename: &str, app_handle: &AppHandle) -> Result<PathBuf, String> {
+    let dumps_path = get_dumps_path();
+    fs::create_dir_all(&dumps_path).map_err(|e| e.to_string())?;
+    
+    app_handle.emit("download-progress", DownloadProgress {
+        message: format!("Starting download of {}", filename),
+        progress: 0.0,
+        is_extracting: false,
+    }).map_err(|e| e.to_string())?;
+    
+    let target_path = dumps_path.join(filename);
+    let temp_path = target_path.with_extension("tmp");
+
+    let res = client
+        .get(url)
+        .header("User-Agent", get_user_agent())
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let total_size = res.content_length().unwrap_or(0);
+    let mut downloaded = 0;
+    let mut last_progress = -1.0;
+    
+    let mut file = fs::File::create(&temp_path).map_err(|e| e.to_string())?;
+    let mut stream = res.bytes_stream();
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| e.to_string())?;
+        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        downloaded += chunk.len() as u64;
+        
+        let progress = if total_size > 0 {
+            (downloaded as f64 / total_size as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        if (progress - last_progress).abs() >= 1.0 {
+            app_handle.emit("download-progress", DownloadProgress {
+                message: format!("Downloading {}", filename),
+                progress,
+                is_extracting: false,
+            }).map_err(|e| e.to_string())?;
+            last_progress = progress;
+        }
+    }
+
+    fs::rename(&temp_path, &target_path).map_err(|e| e.to_string())?;
+    Ok(target_path)
+}
+
+async fn extract_dump(path: PathBuf, app_handle: &AppHandle) -> Result<(), String> {
+    let filename = path.file_name().unwrap().to_string_lossy().to_string();
+    
+    app_handle.emit("download-progress", DownloadProgress {
+        message: format!("Extracting {}", filename.replace(".gz", "")),
+        progress: 0.0,
+        is_extracting: true,
+    }).map_err(|e| e.to_string())?;
+    
+    let file = fs::File::open(path.clone()).map_err(|e| e.to_string())?;
+    let mut gz = GzDecoder::new(file);
+    
+    let out_path = path.with_extension("");
+    let mut out_file = fs::File::create(&out_path).map_err(|e| e.to_string())?;
+    
+    std::io::copy(&mut gz, &mut out_file).map_err(|e| e.to_string())?;
+    
+    fs::remove_file(path).map_err(|e| e.to_string())?;
+
+    app_handle.emit("download-progress", DownloadProgress {
+        message: format!("Finished extracting {}", filename.replace(".gz", "")),
+        progress: 100.0,
+        is_extracting: true,
+    }).map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
+async fn prepare_data_dumps(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let client = Client::new();
+    let dumps = vec![
+        ("https://www.nationstates.net/pages/nations.xml.gz", "nations.xml.gz"),
+        ("https://www.nationstates.net/pages/regions.xml.gz", "regions.xml.gz"),
+    ];
+
+    let _ = app_handle.emit("download-progress", DownloadProgress {
+        message: "Preparing to download data dumps...".to_string(),
+        progress: 0.0,
+        is_extracting: false,
+    });
+
+    for (url, filename) in dumps {
+        let path = download_dump(&client, url, filename, app_handle).await?;
+        extract_dump(path, app_handle).await?;
+    }
+
+    let _ = app_handle.emit("download-progress", DownloadProgress {
+        message: "All data dumps processed successfully!".to_string(),
+        progress: 100.0,
+        is_extracting: false,
+    });
+    Ok(())
+}
+
 fn main() {
     let discord = initialize_discord();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            let app_handle = app.handle().clone();
+            let splash_w = app.get_webview_window("splash").unwrap();
+            
+            // Start the download process
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = prepare_data_dumps(&app_handle).await {
+                    println!("Error preparing data dumps: {}", e);
+                    let _ = app_handle.emit("download-progress", DownloadProgress {
+                        message: format!("Error: {}", e),
+                        progress: 0.0,
+                        is_extracting: false,
+                    });
+                }
+                
+                // Show the main window after downloads complete
+                if let Some(main_window) = app_handle.get_webview_window("main") {
+                    let _ = main_window.show();
+                }
+                
+                // Close splash window
+                let _ = splash_w.close();
+            });
+
             // Initialize auth state from saved credentials on startup
-            let window = app.get_webview_window("main").unwrap();
             let state: State<AuthState> = app.state();
             if let Some(credentials) = load_saved_credentials() {
                 *state.0.lock().unwrap() = Some(AuthStateData {
@@ -456,13 +615,20 @@ fn main() {
                     pin: String::new(),
                 });
             }
-            #[cfg(target_os = "macos")]
-            apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
-                .expect("Unsupported platform! 'apply_vibrancy' is only supported on macOS");
 
+            // Apply mica effect to both windows on startup
             #[cfg(target_os = "windows")]
-            apply_mica(&window, Some(true))
-                .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
+            {
+                if let Some(window) = app.get_webview_window("splash") {
+                    apply_mica(&window, Some(true))
+                        .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
+                }
+                if let Some(window) = app.get_webview_window("main") {
+                    apply_mica(&window, Some(true))
+                        .expect("Unsupported platform! 'apply_mica' is only supported on Windows");
+                }
+            }
+            
             Ok(())
         })
         .manage(DiscordState(Arc::new(Mutex::new(discord))))

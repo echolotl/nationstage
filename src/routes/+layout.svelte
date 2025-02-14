@@ -3,6 +3,7 @@
     import Navbar from '$lib/components/ui/navbar.svelte';
     import { theme } from '$lib/stores/theme';
     import { auth, isAuthenticated, currentNation } from '$lib/stores/auth';
+    import { page } from '$app/stores';
 
     let { children } = $props();
 
@@ -15,11 +16,22 @@
         scrolled = window.scrollY > 0;
     }
 
+    // Skip auth check and layout for splash screen
+    $effect(() => {
+        if ($page.route.id === '/splash') {
+            return;
+        }
+    });
+
     onMount(async () => {
+        // Skip auth check for splash screen
+        if ($page.route.id === '/splash') {
+            return;
+        }
+
         try {
             const authData = await invoke<{ nation: string, region: string | null } | null>('get_auth');
             if (authData) {
-                // Set all auth state at once to prevent multiple updates
                 const newState = {
                     isAuthenticated: true,
                     nation: authData.nation,
@@ -51,17 +63,21 @@
         window.removeEventListener('scroll', handleScroll);
     });
 </script>
-  
-<div class="layout">
-    <Window {scrolled} />
-    <Navbar {scrolled} />
-</div>
 
-<style>
-    .layout {
-        display: flex;
-        flex-direction: column;
-        max-height: 100vh;
-    }
-</style>  
-{@render children()}
+{#if $page.route.id === '/splash'}
+    {@render children()}
+{:else}
+    <div class="layout">
+        <Window {scrolled} />
+        <Navbar {scrolled} />
+        
+    </div>
+    <style>
+        .layout {
+            display: flex;
+            flex-direction: column;
+            max-height: 100vh;
+        }
+    </style>
+    {@render children()}
+{/if}

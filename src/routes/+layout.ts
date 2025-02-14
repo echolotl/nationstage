@@ -8,8 +8,8 @@ import type { LayoutLoad } from './$types';
 import { invoke } from '@tauri-apps/api/core';
 
 export const load: LayoutLoad = async ({ url }) => {
-    // Skip auth check for login page to avoid redirect loop
-    if (url.pathname === '/login') {
+    // Skip auth check for login page and splash screen
+    if (url.pathname === '/login' || url.pathname === '/splash') {
         return {};
     }
 
